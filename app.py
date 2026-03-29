@@ -5,7 +5,45 @@ import os
 
 app = Flask(__name__)
 
+import time
+
+last_data = {}
+last_fetch_time = {}
+
 def calculate_signal(symbol):
+    try:
+        current_time = time.time()
+
+        # ⏱️ 10 sec cache
+        if symbol in last_fetch_time and current_time - last_fetch_time[symbol] < 10:
+            data = last_data[symbol]
+        else:
+            data = yf.download(symbol, period="1d", interval="5m")
+            last_data[symbol] = data
+            last_fetch_time[symbol] = current_time
+
+        if data.empty:
+            return "NO DATA", 0, 0, 0, "NO DATA"
+
+        close = data['Close']
+
+        ema20 = close.ewm(span=20).mean()
+        ema50 = close.ewm(span=50).mean()
+
+        last_price = round(close.iloc[-1], 2)
+
+        if ema20.iloc[-1] > ema50.iloc[-1] * 1.001:
+            return "BUY ⚡", last_price, last_price-50, last_price+120, "📈 STRONG UP"
+
+        elif ema20.iloc[-1] < ema50.iloc[-1] * 0.999:
+            return "SELL 🔻", last_price, last_price+50, last_price-120, "📉 STRONG DOWN"
+
+        else:
+            return "SELL 🔻", last_price, last_price+30, last_price-60, "WEAK"
+
+    except Exception as e:
+        print("ERROR:", e)
+        return "NO SIGNAL", 0, 0, 0, "ERROR"
     try:
         data = yf.download(symbol, period="1d", interval="5m")
 
