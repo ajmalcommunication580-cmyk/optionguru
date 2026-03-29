@@ -5,37 +5,42 @@ import os
 
 app = Flask(__name__)
 
-# ✅ AI + STRONG SIGNAL FUNCTION
 def calculate_signal(symbol):
     try:
         data = yf.download(symbol, period="5d", interval="5m")
 
-        if data.empty:
-            return "NO DATA", 0, 0, 0, "No Prediction"
+        # ❌ agar data nahi mila toh fallback
+        if data is None or data.empty:
+            return "BUY ⚡", 0, 0, 0, "No Data (Default Buy)"
 
         data["EMA20"] = data["Close"].ewm(span=20).mean()
         data["EMA50"] = data["Close"].ewm(span=50).mean()
 
         last = data.iloc[-1]
-        price = round(last["Close"], 2)
 
-        # 🔥 STRONG SIGNAL LOGIC (NO HOLD)
+        # ❌ safety check
+        if pd.isna(last["Close"]) or pd.isna(last["EMA20"]) or pd.isna(last["EMA50"]):
+            return "BUY ⚡", 0, 0, 0, "Data Issue (Default Buy)"
+
+        price = round(float(last["Close"]), 2)
+
+        # 🔥 STRONG SIGNAL
         if last["EMA20"] > last["EMA50"] and price > last["EMA20"]:
             signal = "🔥 STRONG BUY"
+            prediction = "📈 UP TREND"
             entry = price
             sl = round(price - 50, 2)
             target = round(price + 100, 2)
-            prediction = "📈 UP TREND"
 
         elif last["EMA20"] < last["EMA50"] and price < last["EMA20"]:
             signal = "🔥 STRONG SELL"
+            prediction = "📉 DOWN TREND"
             entry = price
             sl = round(price + 50, 2)
             target = round(price - 100, 2)
-            prediction = "📉 DOWN TREND"
 
         else:
-            # ❌ HOLD REMOVE → force strong signal
+            # ⚡ fallback (NO HOLD)
             if last["EMA20"] > last["EMA50"]:
                 signal = "BUY ⚡"
                 prediction = "📈 Weak Uptrend"
@@ -51,11 +56,12 @@ def calculate_signal(symbol):
 
         return signal, entry, sl, target, prediction
 
-    except:
-        return "ERROR", 0, 0, 0, "Error"
+    except Exception as e:
+        print("ERROR:", e)
+        # ❌ ERROR aane pe bhi BUY return karega
+        return "BUY ⚡", 0, 0, 0, "Fallback Mode"
 
 
-# 🌐 ROUTES
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -85,7 +91,6 @@ def banknifty():
     })
 
 
-# 🚀 SERVER START
 if __name__ == "__main__":
     print("Starting Flask Server...")
     port = int(os.environ.get("PORT", 10000))
