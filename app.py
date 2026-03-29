@@ -13,7 +13,7 @@ last_fetch_time = {}
 def calculate_signal(symbol):
     try:
         import time
-        time.sleep(2)   # 🔥 rate limit fix
+        time.sleep(3)   # 🔥 rate limit fix
 
         data = yf.download(symbol, period="1d", interval="5m", progress=False)
 
