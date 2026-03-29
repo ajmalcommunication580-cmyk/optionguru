@@ -12,18 +12,13 @@ last_fetch_time = {}
 
 def calculate_signal(symbol):
     try:
-        current_time = time.time()
+        import time
+        time.sleep(1)
 
-        # ⏱️ 10 sec cache
-        if symbol in last_fetch_time and current_time - last_fetch_time[symbol] < 10:
-            data = last_data[symbol]
-        else:
-            data = yf.download(symbol, period="1d", interval="5m")
-            last_data[symbol] = data
-            last_fetch_time[symbol] = current_time
+        data = yf.download(symbol, period="1d", interval="5m", progress=False)
 
         if data.empty:
-            return "NO DATA", 0, 0, 0, "NO DATA"
+            return "BUY ⚡", 0, 0, 0, "Fallback (No Data)"
 
         close = data['Close']
 
@@ -32,23 +27,26 @@ def calculate_signal(symbol):
 
         last_price = round(close.iloc[-1], 2)
 
-        if ema20.iloc[-1] > ema50.iloc[-1] * 1.001:
-            return "BUY ⚡", last_price, last_price-50, last_price+120, "📈 STRONG UP"
-
-        elif ema20.iloc[-1] < ema50.iloc[-1] * 0.999:
-            return "SELL 🔻", last_price, last_price+50, last_price-120, "📉 STRONG DOWN"
+        # ONLY BUY / SELL
+        if ema20.iloc[-1] > ema50.iloc[-1]:
+            signal = "BUY ⚡"
+            entry = last_price
+            sl = entry - 50
+            target = entry + 100
+            prediction = "📈 UP TREND"
 
         else:
-            return "SELL 🔻", last_price, last_price+30, last_price-60, "WEAK"
+            signal = "SELL 🔻"
+            entry = last_price
+            sl = entry + 50
+            target = entry - 100
+            prediction = "📉 DOWN TREND"
+
+        return signal, entry, sl, target, prediction
 
     except Exception as e:
         print("ERROR:", e)
-        return "NO SIGNAL", 0, 0, 0, "ERROR"
-    try:
-        data = yf.download(symbol, period="1d", interval="5m")
-
-        if data.empty:
-            return "NO DATA", 0, 0, 0, "NO DATA"
+        return "BUY ⚡", 0, 0, 0, "Fallback Mode"
 
         close = data['Close']
 
