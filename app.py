@@ -1,62 +1,61 @@
 from flask import Flask, jsonify, render_template
-import pandas as pd
 import yfinance as yf
+import pandas as pd
+import os
 
 app = Flask(__name__)
 
+# ✅ AI + STRONG SIGNAL FUNCTION
 def calculate_signal(symbol):
     try:
-        df = yf.Ticker(symbol).history(interval="5m", period="5d")
+        data = yf.download(symbol, period="5d", interval="5m")
 
-        if df.empty:
-            return "NO DATA ❌", 0, 0, 0, "NO DATA"
+        if data.empty:
+            return "NO DATA", 0, 0, 0, "No Prediction"
 
-        df['ema9'] = df['Close'].ewm(span=9).mean()
-        df['ema21'] = df['Close'].ewm(span=21).mean()
+        data["EMA20"] = data["Close"].ewm(span=20).mean()
+        data["EMA50"] = data["Close"].ewm(span=50).mean()
 
-        delta = df['Close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-        rs = gain / loss
-        df['rsi'] = 100 - (100 / (1 + rs))
+        last = data.iloc[-1]
+        price = round(last["Close"], 2)
 
-        last = df.iloc[-1]
-        entry = round(last['Close'], 2)
-
-        # 🔥 STRONG SIGNAL
-        if last['rsi'] < 30 and last['ema9'] > last['ema21']:
-            signal = "STRONG BUY CALL 🚀"
-        elif last['rsi'] > 70 and last['ema9'] < last['ema21']:
-            signal = "STRONG BUY PUT 🔻"
-        else:
-            signal = "HOLD ⏳"
-
-        # 🔥 SL & TARGET
-        if "CALL" in signal:
-            sl = entry - 50
-            target = entry + 100
-        elif "PUT" in signal:
-            sl = entry + 50
-            target = entry - 100
-        else:
-            sl = 0
-            target = 0
-
-        # 🤖 AI PREDICTION
-        if last['ema9'] > last['ema21'] and last['rsi'] > 50:
+        # 🔥 STRONG SIGNAL LOGIC (NO HOLD)
+        if last["EMA20"] > last["EMA50"] and price > last["EMA20"]:
+            signal = "🔥 STRONG BUY"
+            entry = price
+            sl = round(price - 50, 2)
+            target = round(price + 100, 2)
             prediction = "📈 UP TREND"
-        elif last['ema9'] < last['ema21'] and last['rsi'] < 50:
+
+        elif last["EMA20"] < last["EMA50"] and price < last["EMA20"]:
+            signal = "🔥 STRONG SELL"
+            entry = price
+            sl = round(price + 50, 2)
+            target = round(price - 100, 2)
             prediction = "📉 DOWN TREND"
+
         else:
-            prediction = "➡️ SIDEWAYS"
+            # ❌ HOLD REMOVE → force strong signal
+            if last["EMA20"] > last["EMA50"]:
+                signal = "BUY ⚡"
+                prediction = "📈 Weak Uptrend"
+                entry = price
+                sl = round(price - 40, 2)
+                target = round(price + 80, 2)
+            else:
+                signal = "SELL ⚡"
+                prediction = "📉 Weak Downtrend"
+                entry = price
+                sl = round(price + 40, 2)
+                target = round(price - 80, 2)
 
         return signal, entry, sl, target, prediction
 
-    except Exception as e:
-        print("Error:", e)
-        return "ERROR ❌", 0, 0, 0, "ERROR"
+    except:
+        return "ERROR", 0, 0, 0, "Error"
 
 
+# 🌐 ROUTES
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -86,8 +85,7 @@ def banknifty():
     })
 
 
-import os
-
+# 🚀 SERVER START
 if __name__ == "__main__":
     print("Starting Flask Server...")
     port = int(os.environ.get("PORT", 10000))
