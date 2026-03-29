@@ -86,9 +86,7 @@ def banknifty():
     })
 
 
-if __name__ == "__main__":
-    print("Starting Flask Server...")
-    import os
+import os
 
 if __name__ == "__main__":
     print("Starting Flask Server...")
