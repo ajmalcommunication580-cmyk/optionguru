@@ -13,12 +13,12 @@ last_fetch_time = {}
 def calculate_signal(symbol):
     try:
         import time
-        time.sleep(1)
+        time.sleep(2)   # 🔥 rate limit fix
 
         data = yf.download(symbol, period="1d", interval="5m", progress=False)
 
         if data.empty:
-            return "BUY ⚡", 0, 0, 0, "Fallback (No Data)"
+            return "BUY ⚡", 0, 0, 0, "No Data (Fallback)"
 
         close = data['Close']
 
@@ -27,22 +27,21 @@ def calculate_signal(symbol):
 
         last_price = round(close.iloc[-1], 2)
 
-        # ONLY BUY / SELL
-        if ema20.iloc[-1] > ema50.iloc[-1]:
-            signal = "BUY ⚡"
-            entry = last_price
-            sl = entry - 50
-            target = entry + 100
-            prediction = "📈 UP TREND"
+        # STRONG SIGNAL
+        diff = abs(ema20.iloc[-1] - ema50.iloc[-1])
+
+        if ema20.iloc[-1] > ema50.iloc[-1] and diff > 5:
+            return "BUY ⚡", last_price, last_price-50, last_price+120, "📈 STRONG UP"
+
+        elif ema50.iloc[-1] > ema20.iloc[-1] and diff > 5:
+            return "SELL 🔻", last_price, last_price+50, last_price-120, "📉 STRONG DOWN"
 
         else:
-            signal = "SELL 🔻"
-            entry = last_price
-            sl = entry + 50
-            target = entry - 100
-            prediction = "📉 DOWN TREND"
-
-        return signal, entry, sl, target, prediction
+            # Weak → still force signal (no HOLD)
+            if ema20.iloc[-1] > ema50.iloc[-1]:
+                return "BUY ⚡", last_price, last_price-40, last_price+80, "📈 WEAK UP"
+            else:
+                return "SELL 🔻", last_price, last_price+40, last_price-80, "📉 WEAK DOWN"
 
     except Exception as e:
         print("ERROR:", e)
