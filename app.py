@@ -11,41 +11,84 @@ last_data = {}
 last_fetch_time = {}
 
 def calculate_signal(symbol):
-    try:
-        import time
-        time.sleep(3)   # 🔥 rate limit fix
+    global cache, last_fetch_time
 
-        data = yf.download(symbol, period="1d", interval="5m", progress=False)
+    import time
+    import yfinance as yf
+    import pandas as pd
+
+    # 🔥 CACHE (20 sec)
+    if time.time() - last_fetch_time < 20 and symbol in cache:
+        return cache[symbol]
+
+    try:
+        data = yf.download(symbol, period="1d", interval="5m")
 
         if data.empty:
-            return "BUY ⚡", 0, 0, 0, "No Data (Fallback)"
+            return "NO SIGNAL", 0, 0, 0, "NO DATA"
 
         close = data['Close']
+        volume = data['Volume']
 
+        # 📊 Indicators
         ema20 = close.ewm(span=20).mean()
         ema50 = close.ewm(span=50).mean()
 
+        # RSI
+        delta = close.diff()
+        gain = delta.clip(lower=0)
+        loss = -delta.clip(upper=0)
+
+        avg_gain = gain.rolling(14).mean()
+        avg_loss = loss.rolling(14).mean()
+
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        # Latest values
         last_price = round(close.iloc[-1], 2)
+        last_rsi = rsi.iloc[-1]
+        vol_avg = volume.rolling(20).mean().iloc[-1]
+        last_vol = volume.iloc[-1]
 
-        # STRONG SIGNAL
-        diff = abs(ema20.iloc[-1] - ema50.iloc[-1])
+        # 🔥 STRONG BUY
+        if (
+            ema20.iloc[-1] > ema50.iloc[-1] and
+            last_rsi > 55 and
+            last_vol > vol_avg
+        ):
+            signal = "STRONG BUY 🚀"
+            entry = last_price
+            sl = round(entry - 50, 2)
+            target = round(entry + 120, 2)
+            prediction = "📈 STRONG UPTREND"
 
-        if ema20.iloc[-1] > ema50.iloc[-1] and diff > 5:
-            return "BUY ⚡", last_price, last_price-50, last_price+120, "📈 STRONG UP"
-
-        elif ema50.iloc[-1] > ema20.iloc[-1] and diff > 5:
-            return "SELL 🔻", last_price, last_price+50, last_price-120, "📉 STRONG DOWN"
+        # 🔥 STRONG SELL
+        elif (
+            ema20.iloc[-1] < ema50.iloc[-1] and
+            last_rsi < 45 and
+            last_vol > vol_avg
+        ):
+            signal = "STRONG SELL 🔻"
+            entry = last_price
+            sl = round(entry + 50, 2)
+            target = round(entry - 120, 2)
+            prediction = "📉 STRONG DOWNTREND"
 
         else:
-            # Weak → still force signal (no HOLD)
-            if ema20.iloc[-1] > ema50.iloc[-1]:
-                return "BUY ⚡", last_price, last_price-40, last_price+80, "📈 WEAK UP"
-            else:
-                return "SELL 🔻", last_price, last_price+40, last_price-80, "📉 WEAK DOWN"
+            # ❌ NO TRADE → fake BUY/SELL nahi
+            return "NO TRADE ❌", 0, 0, 0, "Wait for strong signal"
+
+        result = (signal, entry, sl, target, prediction)
+
+        cache[symbol] = result
+        last_fetch_time = time.time()
+
+        return result
 
     except Exception as e:
         print("ERROR:", e)
-        return "BUY ⚡", 0, 0, 0, "Fallback Mode"
+        return "NO TRADE ❌", 0, 0, 0, "Error Mode"
 
         close = data['Close']
 
