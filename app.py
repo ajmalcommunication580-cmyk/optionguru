@@ -8,26 +8,39 @@ app = Flask(__name__)
 API_KEY = "TQPLmWZm"
 CLIENT_ID = "M59304123"
 PASSWORD = "7869"
-TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"   # ⚠️ Google Authenticator wala secret
+TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"
 
 obj = None
 
-# 🔐 Login once (important)
+# 🔐 Login once
 def login():
     global obj
     if obj is None:
-        obj = SmartConnect(api_key=API_KEY)
-        totp = pyotp.TOTP(TOTP_SECRET).now()
-        obj.generateSession(CLIENT_ID, PASSWORD, totp)
+        try:
+            obj = SmartConnect(api_key=API_KEY)
+            totp = pyotp.TOTP(TOTP_SECRET).now()
+            print("TOTP:", totp)
+
+            session = obj.generateSession(CLIENT_ID, PASSWORD, totp)
+            print("SESSION:", session)
+
+        except Exception as e:
+            print("LOGIN ERROR:", e)
+            raise e
     return obj
 
 # 📊 Price fetch
 def get_price(token):
     obj = login()
     data = obj.ltpData("NSE", token, "")
+    print("LTP DATA:", data)
+
+    if 'data' not in data:
+        raise Exception(data)
+
     return float(data['data']['ltp'])
 
-# 🏠 Homepage (IMPORTANT)
+# 🏠 Homepage
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -47,8 +60,9 @@ def nifty():
         })
 
     except Exception as e:
-        print("ERROR:", e)
-        return jsonify({"signal": "WAIT", "prediction": "ERROR", "entry": 0, "sl": 0, "target": 0})
+        return jsonify({
+            "error": str(e)
+        })
 
 # 🚀 BANKNIFTY
 @app.route("/banknifty")
@@ -65,8 +79,9 @@ def banknifty():
         })
 
     except Exception as e:
-        print("ERROR:", e)
-        return jsonify({"signal": "WAIT", "prediction": "ERROR", "entry": 0, "sl": 0, "target": 0})
+        return jsonify({
+            "error": str(e)
+        })
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
