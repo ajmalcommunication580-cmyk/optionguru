@@ -1,33 +1,42 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 from SmartApi import SmartConnect
 import pyotp
 
 app = Flask(__name__)
 
-# 🔑 YOUR DETAILS (yahan apna daalo)
+# 🔑 YOUR DETAILS
 API_KEY = "TQPLmWZm"
 CLIENT_ID = "M59304123"
 PASSWORD = "7869"
-TOTP_SECRET = "310205"
+TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"   # ⚠️ Google Authenticator wala secret
 
-# 🔐 Login function
+obj = None
+
+# 🔐 Login once (important)
 def login():
-    obj = SmartConnect(api_key=API_KEY)
-    totp = pyotp.TOTP(TOTP_SECRET).now()
-    session = obj.generateSession(CLIENT_ID, PASSWORD, totp)
+    global obj
+    if obj is None:
+        obj = SmartConnect(api_key=API_KEY)
+        totp = pyotp.TOTP(TOTP_SECRET).now()
+        obj.generateSession(CLIENT_ID, PASSWORD, totp)
     return obj
 
 # 📊 Price fetch
-def get_price(obj, token):
+def get_price(token):
+    obj = login()
     data = obj.ltpData("NSE", token, "")
     return float(data['data']['ltp'])
+
+# 🏠 Homepage (IMPORTANT)
+@app.route("/")
+def home():
+    return render_template("index.html")
 
 # 🚀 NIFTY
 @app.route("/nifty")
 def nifty():
     try:
-        obj = login()
-        price = get_price(obj, "99926000")
+        price = get_price("99926000")
 
         return jsonify({
             "signal": "BUY" if price % 2 == 0 else "SELL",
@@ -45,8 +54,7 @@ def nifty():
 @app.route("/banknifty")
 def banknifty():
     try:
-        obj = login()
-        price = get_price(obj, "99926009")
+        price = get_price("99926009")
 
         return jsonify({
             "signal": "BUY" if price % 2 == 0 else "SELL",
