@@ -67,8 +67,17 @@ async function loadData(){
         let currentSignal = n.signal;
 
         if(currentSignal !== lastSignal){
-            notify(currentSignal);
-            lastSignal = currentSignal;
+
+    // ✅ Sirf STRONG signals pe notify
+    if(
+        currentSignal.includes("STRONG BUY") || 
+        currentSignal.includes("STRONG SELL")
+    ){
+        notify(currentSignal);
+    }
+
+    lastSignal = currentSignal;
+}
         }
 
     } catch (err) {
@@ -87,7 +96,7 @@ if (Notification.permission !== "granted"){
 }
 
 // ⛔ IMPORTANT: Slow refresh (15 sec)
-setInterval(loadData, 30000);
+setInterval(loadData, 45000);
 
 // First load
 loadData();
