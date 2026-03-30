@@ -1,3 +1,5 @@
 flask
 pandas
 yfinance
+smartapi-python
+pyotp
