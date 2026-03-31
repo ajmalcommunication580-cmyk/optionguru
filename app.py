@@ -33,10 +33,15 @@ def login():
 def get_price(token):
     obj = login()
     data = obj.ltpData("NSE", token, "")
-    print("LTP DATA:", data)
 
-    if 'data' not in data:
-        raise Exception(data)
+    print("FULL RESPONSE:", data)
+
+    # ✅ Safe check
+    if data is None:
+        raise Exception("No response from API")
+
+    if 'data' not in data or data['data'] is None:
+        raise Exception(f"Invalid API response: {data}")
 
     return float(data['data']['ltp'])
 
