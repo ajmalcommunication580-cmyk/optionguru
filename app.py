@@ -32,7 +32,7 @@ def login():
 # 📊 Price fetch
 def get_price(token):
     obj = login()
-    data = obj.ltpData("NSE", token, "")
+    data = obj.ltpData("NSE", "NIFTY", token)
 
     print("FULL RESPONSE:", data)
 
