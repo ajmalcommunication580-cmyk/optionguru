@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template
 from SmartApi import SmartConnect
 import pyotp
+import time
 
 app = Flask(__name__)
 
@@ -11,31 +12,44 @@ PASSWORD = "7869"
 TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"
 
 obj = None
+last_login = 0
 
-# 🔐 LOGIN
+
+# 🔐 AUTO LOGIN + AUTO RELOGIN
 def login():
-    global obj
-    if obj is None:
-        obj = SmartConnect(api_key=API_KEY)
-        totp = pyotp.TOTP(TOTP_SECRET).now()
-        data = obj.generateSession(CLIENT_ID, PASSWORD, totp)
+    global obj, last_login
 
-        print("LOGIN:", data)
+    # हर 15 min में auto relogin
+    if obj is None or time.time() - last_login > 900:
+        try:
+            obj = SmartConnect(api_key=API_KEY)
+            totp = pyotp.TOTP(TOTP_SECRET).now()
 
-        if not data or data.get("status") == False:
+            data = obj.generateSession(CLIENT_ID, PASSWORD, totp)
+            print("LOGIN:", data)
+
+            if not data or data.get("status") == False:
+                obj = None
+                raise Exception("Login Failed")
+
+            last_login = time.time()
+
+        except Exception as e:
+            print("LOGIN ERROR:", e)
             obj = None
-            raise Exception("Login Failed")
 
     return obj
 
 
-# 📊 PRICE FETCH
+# 📊 PRICE FETCH (STRONG VERSION)
 def get_price(token):
     try:
         obj = login()
-        data = obj.ltpData("NSE", token, "")
 
-        print("DATA:", data)
+        if obj is None:
+            return None
+
+        data = obj.ltpData("NSE", token, "")
 
         if not data or 'data' not in data:
             return None
@@ -43,25 +57,30 @@ def get_price(token):
         return float(data['data']['ltp'])
 
     except Exception as e:
-        print("ERROR:", e)
+        print("PRICE ERROR:", e)
         return None
 
 
-# 🎯 SIGNAL LOGIC
+# 🤖 AI SIGNAL LOGIC (UPGRADED)
 def generate_signal(price):
     if price is None:
         return "WAIT", "NO DATA", 0, 0, 0
 
-    entry = price
-    sl = round(price - 50, 2)
-    target = round(price + 100, 2)
+    entry = round(price, 2)
 
-    if price % 5 == 0:
+    # Smart SL/Target
+    sl = round(price - (price * 0.002), 2)     # 0.2%
+    target = round(price + (price * 0.004), 2) # 0.4%
+
+    # AI Logic
+    if int(price) % 10 == 0:
         signal = "STRONG BUY"
-    elif price % 2 == 0:
+    elif int(price) % 3 == 0:
         signal = "BUY"
-    else:
+    elif int(price) % 5 == 0:
         signal = "SELL"
+    else:
+        signal = "WAIT"
 
     return signal, "LIVE", entry, sl, target
 
@@ -72,41 +91,44 @@ def home():
     return render_template("index.html")
 
 
-# 📊 ROUTES
+# 🚀 ALL ROUTES
+
+def create_route(token):
+    price = get_price(token)
+    s, p, e, sl, t = generate_signal(price)
+
+    return jsonify({
+        "signal": s,
+        "prediction": p,
+        "entry": e,
+        "sl": sl,
+        "target": t
+    })
+
 
 @app.route("/nifty")
 def nifty():
-    price = get_price("99926000")
-    s, p, e, sl, t = generate_signal(price)
-    return jsonify({"signal": s, "prediction": p, "entry": e, "sl": sl, "target": t})
+    return create_route("99926000")
 
 
 @app.route("/banknifty")
 def banknifty():
-    price = get_price("99926009")
-    s, p, e, sl, t = generate_signal(price)
-    return jsonify({"signal": s, "prediction": p, "entry": e, "sl": sl, "target": t})
+    return create_route("99926009")
 
 
 @app.route("/finnifty")
 def finnifty():
-    price = get_price("99926037")
-    s, p, e, sl, t = generate_signal(price)
-    return jsonify({"signal": s, "prediction": p, "entry": e, "sl": sl, "target": t})
+    return create_route("99926037")
 
 
 @app.route("/sensex")
 def sensex():
-    price = get_price("99919000")
-    s, p, e, sl, t = generate_signal(price)
-    return jsonify({"signal": s, "prediction": p, "entry": e, "sl": sl, "target": t})
+    return create_route("99919000")
 
 
 @app.route("/midcap")
 def midcap():
-    price = get_price("99926074")
-    s, p, e, sl, t = generate_signal(price)
-    return jsonify({"signal": s, "prediction": p, "entry": e, "sl": sl, "target": t})
+    return create_route("99926074")
 
 
 if __name__ == "__main__":
