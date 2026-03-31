@@ -3,16 +3,14 @@
 <head>
 <title>OptionGuru Hooriya PRO</title>
 
+<script src="https://s3.tradingview.com/tv.js"></script>
+
 <style>
 body {
     background:#0d1117;
     color:white;
     text-align:center;
     font-family:Arial;
-}
-
-h1 {
-    margin-top:20px;
 }
 
 .container {
@@ -23,24 +21,18 @@ h1 {
 
 .card {
     margin:15px;
-    padding:20px;
-    width:300px;
-    border-radius:12px;
+    padding:15px;
+    width:250px;
+    border-radius:10px;
     background:#161b22;
-    box-shadow:0 0 10px rgba(0,0,0,0.5);
 }
 
 .signal {
-    font-size:15px;
     margin-top:10px;
-    line-height:1.6;
+    line-height:1.5;
+    font-size:14px;
 }
-
-.buy { color:#00ff9c; }
-.sell { color:#ff4d4d; }
-.wait { color:#f1c40f; }
 </style>
-
 </head>
 
 <body>
@@ -48,85 +40,57 @@ h1 {
 <h1>🚀 OptionGuru Hooriya PRO</h1>
 
 <div class="container">
-
-<div class="card">
-    <h2>NIFTY</h2>
-    <div class="signal" id="nifty">Loading...</div>
+<div class="card"><h3>NIFTY</h3><div id="nifty"></div></div>
+<div class="card"><h3>BANKNIFTY</h3><div id="bank"></div></div>
+<div class="card"><h3>SENSEX</h3><div id="sensex"></div></div>
+<div class="card"><h3>FINNIFTY</h3><div id="fin"></div></div>
+<div class="card"><h3>MIDCAP</h3><div id="mid"></div></div>
 </div>
 
-<div class="card">
-    <h2>BANK NIFTY</h2>
-    <div class="signal" id="bank">Loading...</div>
-</div>
-
-<div class="card">
-    <h2>SENSEX</h2>
-    <div class="signal" id="sensex">Loading...</div>
-</div>
-
-<div class="card">
-    <h2>FINNIFTY</h2>
-    <div class="signal" id="finnifty">Loading...</div>
-</div>
-
-<div class="card">
-    <h2>MIDCAP</h2>
-    <div class="signal" id="midcap">Loading...</div>
-</div>
-
-</div>
-
-<div id="chart" style="margin-top:30px;"></div>
-
-<script src="https://s3.tradingview.com/tv.js"></script>
+<div id="chart" style="height:500px;"></div>
 
 <script>
+
+// 📊 TradingView Chart
 new TradingView.widget({
   "width": "100%",
-  "height": 400,
-  "symbol": "NSE:NIFTY50",
+  "height": 500,
+  "symbol": "NSE:NIFTY",
   "interval": "5",
+  "timezone": "Asia/Kolkata",
   "theme": "dark",
+  "style": "1",
+  "locale": "en",
   "container_id": "chart"
 });
-</script>
 
-<script>
 
-async function fetchData(endpoint, elementId){
-    try {
-        let data = await fetch(endpoint).then(r=>r.json());
+// 📡 Fetch Data
+async function loadData(){
 
-        let signalClass = "wait";
-        if(data.signal.includes("BUY")) signalClass = "buy";
-        if(data.signal.includes("SELL")) signalClass = "sell";
+    let n = await fetch("/nifty").then(r=>r.json());
+    let b = await fetch("/banknifty").then(r=>r.json());
+    let s = await fetch("/sensex").then(r=>r.json());
+    let f = await fetch("/finnifty").then(r=>r.json());
+    let m = await fetch("/midcap").then(r=>r.json());
 
-        document.getElementById(elementId).innerHTML =
-            `<span class="${signalClass}">
-            ${data.signal} | ${data.prediction} <br>
-            Entry: ${data.entry} <br>
-            SL: ${data.sl} <br>
-            Target: ${data.target}
-            </span>`;
-
-    } catch(e){
-        document.getElementById(elementId).innerText = "⚠️ Error loading data";
+    function format(x){
+        return x.signal + " | " + x.prediction +
+        "<br>Entry: " + x.entry +
+        "<br>SL: " + x.sl +
+        "<br>Target: " + x.target;
     }
+
+    document.getElementById("nifty").innerHTML = format(n);
+    document.getElementById("bank").innerHTML = format(b);
+    document.getElementById("sensex").innerHTML = format(s);
+    document.getElementById("fin").innerHTML = format(f);
+    document.getElementById("mid").innerHTML = format(m);
 }
 
-async function loadAll(){
-    fetchData("/nifty", "nifty");
-    fetchData("/banknifty", "bank");
-    fetchData("/sensex", "sensex");
-    fetchData("/finnifty", "finnifty");
-    fetchData("/midcap", "midcap");
-}
-
-// 🔁 Refresh every 30 sec (stable)
-setInterval(loadAll, 30000);
-
-// First load
-loadAll();
+// ⏱ auto refresh
+setInterval(loadData, 15000);
+loadData();
 
 </script>
 
