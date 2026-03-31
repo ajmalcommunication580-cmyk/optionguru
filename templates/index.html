@@ -1,43 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OptionGuru Hooriya PRO</title>
-
+<title>OptionGuru Trader</title>
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
-body {
-    background:#0d1117;
-    color:white;
-    text-align:center;
-    font-family:Arial;
-}
-
-.container {
-    display:flex;
-    flex-wrap:wrap;
-    justify-content:center;
-}
-
-.card {
-    margin:15px;
-    padding:15px;
-    width:250px;
-    border-radius:10px;
-    background:#161b22;
-}
-
-.signal {
-    margin-top:10px;
-    line-height:1.5;
-    font-size:14px;
-}
+body {background:#0d1117;color:white;text-align:center;}
+.card {background:#161b22;padding:15px;margin:10px;border-radius:10px;width:260px;}
+.container {display:flex;flex-wrap:wrap;justify-content:center;}
 </style>
 </head>
 
 <body>
 
-<h1>🚀 OptionGuru Hooriya PRO</h1>
+<h1>💰 OptionGuru TRADER MODE</h1>
 
 <div class="container">
 <div class="card"><h3>NIFTY</h3><div id="nifty"></div></div>
@@ -51,22 +27,43 @@ body {
 
 <script>
 
-// 📊 TradingView Chart
 new TradingView.widget({
-  "width": "100%",
-  "height": 500,
   "symbol": "NSE:NIFTY",
   "interval": "5",
-  "timezone": "Asia/Kolkata",
   "theme": "dark",
-  "style": "1",
-  "locale": "en",
   "container_id": "chart"
 });
 
+let lastSignal = {};
 
-// 📡 Fetch Data
-async function loadData(){
+function alertUser(name,msg){
+    if(msg.includes("STRONG")){
+        let audio = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
+        audio.play();
+        alert(name + " " + msg);
+    }
+}
+
+function format(x,name){
+
+    if(lastSignal[name] && lastSignal[name] != x.signal){
+        alertUser(name,x.signal);
+    }
+
+    lastSignal[name] = x.signal;
+
+    return `
+    ${x.signal}<br>
+    ${x.prediction}<br><br>
+    Entry: ${x.entry}<br>
+    SL: ${x.sl}<br>
+    Target: ${x.target}<br><br>
+    Support: ${x.support}<br>
+    Resistance: ${x.resistance}
+    `;
+}
+
+async function load(){
 
     let n = await fetch("/nifty").then(r=>r.json());
     let b = await fetch("/banknifty").then(r=>r.json());
@@ -74,23 +71,15 @@ async function loadData(){
     let f = await fetch("/finnifty").then(r=>r.json());
     let m = await fetch("/midcap").then(r=>r.json());
 
-    function format(x){
-        return x.signal + " | " + x.prediction +
-        "<br>Entry: " + x.entry +
-        "<br>SL: " + x.sl +
-        "<br>Target: " + x.target;
-    }
-
-    document.getElementById("nifty").innerHTML = format(n);
-    document.getElementById("bank").innerHTML = format(b);
-    document.getElementById("sensex").innerHTML = format(s);
-    document.getElementById("fin").innerHTML = format(f);
-    document.getElementById("mid").innerHTML = format(m);
+    document.getElementById("nifty").innerHTML = format(n,"NIFTY");
+    document.getElementById("bank").innerHTML = format(b,"BANKNIFTY");
+    document.getElementById("sensex").innerHTML = format(s,"SENSEX");
+    document.getElementById("fin").innerHTML = format(f,"FINNIFTY");
+    document.getElementById("mid").innerHTML = format(m,"MIDCAP");
 }
 
-// ⏱ auto refresh
-setInterval(loadData, 15000);
-loadData();
+setInterval(load,8000);
+load();
 
 </script>
 
