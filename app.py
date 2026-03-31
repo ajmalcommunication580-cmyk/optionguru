@@ -1,118 +1,61 @@
-from flask import Flask, jsonify, render_template
-from SmartApi import SmartConnect
-import pyotp
+<!DOCTYPE html>
+<html>
+<head>
+<title>OptionGuru Hooriya PRO</title>
 
-app = Flask(__name__)
+<style>
+body { background:#0d1117; color:white; text-align:center; font-family:Arial; }
 
-# 🔑 YOUR DETAILS
-API_KEY = "TQPLmWZm"
-CLIENT_ID = "M59304123"
-PASSWORD = "7869"
-TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"
+.card {
+    margin:20px auto;
+    padding:20px;
+    width:320px;
+    border-radius:10px;
+    background:#161b22;
+}
 
-obj = None
+.signal {
+    font-size:16px;
+    margin-top:10px;
+    line-height:1.6;
+}
+</style>
+</head>
 
-# 🔐 Login (Auto retry fix)
-def login():
-    global obj
-    try:
-        if obj is None:
-            obj = SmartConnect(api_key=API_KEY)
-            totp = pyotp.TOTP(TOTP_SECRET).now()
-            session = obj.generateSession(CLIENT_ID, PASSWORD, totp)
+<body>
 
-            if not session or session.get("status") == False:
-                print("Login Failed")
-                obj = None
-        return obj
-    except Exception as e:
-        print("Login Error:", e)
-        obj = None
-        return None
+<h1>🚀 OptionGuru Hooriya (PRO AI)</h1>
 
+<div class="card"><h2>NIFTY</h2><div id="nifty">Loading...</div></div>
+<div class="card"><h2>BANKNIFTY</h2><div id="bank">Loading...</div></div>
+<div class="card"><h2>FINNIFTY</h2><div id="fin">Loading...</div></div>
+<div class="card"><h2>SENSEX</h2><div id="sensex">Loading...</div></div>
 
-# 📊 Safe Price Fetch
-def get_price(token):
-    try:
-        obj = login()
-        if obj is None:
-            return None
+<script>
+async function loadData(){
 
-        data = obj.ltpData("NSE", token, "")
+    let n = await fetch("/nifty").then(r=>r.json());
+    let b = await fetch("/banknifty").then(r=>r.json());
+    let f = await fetch("/finnifty").then(r=>r.json());
+    let s = await fetch("/sensex").then(r=>r.json());
 
-        if not data or "data" not in data:
-            return None
-
-        return float(data["data"]["ltp"])
-
-    except Exception as e:
-        print("Price Error:", e)
-        return None
-
-
-# 🏠 Homepage
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-
-# 🧠 Signal Logic (Advanced)
-def generate_signal(price):
-    if price is None:
-        return {
-            "signal": "WAIT",
-            "prediction": "NO DATA",
-            "entry": 0,
-            "sl": 0,
-            "target": 0
-        }
-
-    # 🔥 Smart logic
-    if price % 5 == 0:
-        signal = "STRONG BUY"
-    elif price % 3 == 0:
-        signal = "BUY"
-    elif price % 2 == 0:
-        signal = "SELL"
-    else:
-        signal = "WAIT"
-
-    return {
-        "signal": signal,
-        "prediction": "LIVE",
-        "entry": price,
-        "sl": round(price - 50, 2),
-        "target": round(price + 100, 2)
+    function format(x){
+        return x.signal + " | " + x.prediction +
+        " | Entry: " + x.entry +
+        " | SL: " + x.sl +
+        " | Target: " + x.target;
     }
 
+    document.getElementById("nifty").innerText = format(n);
+    document.getElementById("bank").innerText = format(b);
+    document.getElementById("fin").innerText = format(f);
+    document.getElementById("sensex").innerText = format(s);
+}
 
-# 🚀 NIFTY
-@app.route("/nifty")
-def nifty():
-    price = get_price("99926000")
-    return jsonify(generate_signal(price))
+// ⏱ refresh 20 sec
+setInterval(loadData, 20000);
+loadData();
+</script>
 
-
-# 🚀 BANKNIFTY
-@app.route("/banknifty")
-def banknifty():
-    price = get_price("99926009")
-    return jsonify(generate_signal(price))
-
-
-# 🚀 FINNIFTY (extra pro feature)
-@app.route("/finnifty")
-def finnifty():
-    price = get_price("99926037")
-    return jsonify(generate_signal(price))
-
-
-# 🚀 SENSEX (extra pro feature)
-@app.route("/sensex")
-def sensex():
-    price = get_price("99919000")
-    return jsonify(generate_signal(price))
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+</body>
+</html>
