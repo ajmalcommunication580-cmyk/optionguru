@@ -46,12 +46,13 @@ def get_price(token):
     try:
         obj = login()
         if obj is None:
+            print("Login failed")
             return None
 
         data = obj.ltpData("NSE", token, "")
+        print("API RESPONSE:", data)   # 🔥 DEBUG LINE
 
         if data is None or 'data' not in data:
-            print("Invalid API response:", data)
             return None
 
         return float(data['data']['ltp'])
