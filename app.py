@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template
 from SmartApi import SmartConnect
 import pyotp
-import time
+import yfinance as yf
 
 app = Flask(__name__)
 
@@ -12,57 +12,68 @@ PASSWORD = "7869"
 TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"
 
 obj = None
-last_login_time = 0
 
-# 🔐 Smart Login (auto refresh)
+# 🔐 Login
 def login():
-    global obj, last_login_time
-
-    # 5 min me session refresh
-    if obj is None or time.time() - last_login_time > 300:
-        try:
+    global obj
+    try:
+        if obj is None:
             obj = SmartConnect(api_key=API_KEY)
             totp = pyotp.TOTP(TOTP_SECRET).now()
+            obj.generateSession(CLIENT_ID, PASSWORD, totp)
+        return obj
+    except Exception as e:
+        print("Login Error:", e)
+        return None
 
-            data = obj.generateSession(CLIENT_ID, PASSWORD, totp)
-
-            if data['status'] is False:
-                print("Login Failed:", data)
-                obj = None
-                return None
-
-            last_login_time = time.time()
-            print("Login Success")
-
-        except Exception as e:
-            print("Login Error:", e)
-            obj = None
-
-    return obj
-
-
-# 📊 SAFE PRICE FETCH
-def get_price(token):
+# 📊 SmartAPI price
+def get_price_smartapi(token):
     try:
         obj = login()
         if obj is None:
-            print("Login failed")
             return None
 
         data = obj.ltpData("NSE", token, "")
-        print("API RESPONSE:", data)   # 🔥 DEBUG LINE
+        print("SMARTAPI:", data)
 
-        if data is None or 'data' not in data:
-            return None
-
-        return float(data['data']['ltp'])
-
-    except Exception as e:
-        print("Price Error:", e)
+        if data and 'data' in data:
+            return float(data['data']['ltp'])
         return None
 
+    except Exception as e:
+        print("SmartAPI Error:", e)
+        return None
 
-# 🧠 SMART SIGNAL ENGINE
+# 🔁 Backup (Yahoo Finance)
+def get_price_backup(symbol):
+    try:
+        ticker = yf.Ticker(symbol)
+        data = ticker.history(period="1d", interval="1m")
+
+        if not data.empty:
+            return float(data['Close'].iloc[-1])
+        return None
+
+    except Exception as e:
+        print("Backup Error:", e)
+        return None
+
+# 🧠 Final price fetch (AUTO SWITCH)
+def get_price(token, backup_symbol):
+    price = get_price_smartapi(token)
+
+    if price is None:
+        print("⚠️ Using BACKUP DATA")
+        price = get_price_backup(backup_symbol)
+
+    return price
+
+# 🏠 Homepage
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+# 📈 Signal Logic (Advanced)
 def generate_signal(price):
     if price is None:
         return {
@@ -75,69 +86,50 @@ def generate_signal(price):
             "resistance": 0
         }
 
-    # 🔥 ADVANCED LOGIC (simple but effective)
     support = round(price - 100, 2)
     resistance = round(price + 100, 2)
 
-    if price % 5 == 0:
-        signal = "STRONG BUY"
-    elif price % 2 == 0:
-        signal = "BUY"
-    else:
-        signal = "SELL"
+    signal = "BUY" if price > support else "SELL"
 
     return {
         "signal": signal,
         "prediction": "LIVE",
         "entry": price,
-        "sl": round(price - 50, 2),
-        "target": round(price + 100, 2),
+        "sl": support,
+        "target": resistance,
         "support": support,
         "resistance": resistance
     }
 
-
-# 🏠 HOME
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-
 # 🚀 NIFTY
 @app.route("/nifty")
 def nifty():
-    price = get_price("99926000")
+    price = get_price("99926000", "^NSEI")
     return jsonify(generate_signal(price))
-
 
 # 🚀 BANKNIFTY
 @app.route("/banknifty")
 def banknifty():
-    price = get_price("99926009")
+    price = get_price("99926009", "^NSEBANK")
     return jsonify(generate_signal(price))
 
-
-# 🚀 SENSEX (dummy token fix later)
+# 🚀 SENSEX
 @app.route("/sensex")
 def sensex():
-    price = get_price("99919000")
+    price = get_price(None, "^BSESN")
     return jsonify(generate_signal(price))
-
 
 # 🚀 FINNIFTY
 @app.route("/finnifty")
 def finnifty():
-    price = get_price("99926037")
+    price = get_price(None, "^NSEFIN")
     return jsonify(generate_signal(price))
-
 
 # 🚀 MIDCAP
 @app.route("/midcap")
 def midcap():
-    price = get_price("99926074")
+    price = get_price(None, "^NSEMDCP50")
     return jsonify(generate_signal(price))
 
-
-# 🚀 RUN
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
