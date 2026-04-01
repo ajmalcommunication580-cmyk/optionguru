@@ -122,7 +122,7 @@ def sensex():
 # 🚀 FINNIFTY
 @app.route("/finnifty")
 def finnifty():
-    price = get_price(None, "^NSEFIN")
+    price = get_price(None, "^CNXFIN")   # ✅ FIXED SYMBOL
     return jsonify(generate_signal(price))
 
 # 🚀 MIDCAP
