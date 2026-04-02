@@ -1,60 +1,76 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OptionGuru Hooriya AI PRO</title>
-<style>
-body { background:#0d1117; color:white; text-align:center; font-family:Arial; }
-.card { margin:15px auto; padding:15px; width:320px; background:#161b22; border-radius:10px; }
-</style>
+    <title>OptionGuru TRADER MODE</title>
+    <style>
+        body {
+            background: #0b1320;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+        }
+
+        .box {
+            background: #111c2e;
+            padding: 20px;
+            border-radius: 10px;
+            width: 200px;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
 
-<h1>🚀 AI TRADING DASHBOARD</h1>
+<h1>💰 OptionGuru TRADER MODE</h1>
 
-<div class="card"><div id="nifty"></div></div>
-<div class="card"><div id="banknifty"></div></div>
-<div class="card"><div id="sensex"></div></div>
-<div class="card"><div id="finnifty"></div></div>
-<div class="card"><div id="midcap"></div></div>
-
-<h2>📊 OPTION CHAIN</h2>
-<div class="card"><div id="opt_nifty"></div></div>
-<div class="card"><div id="opt_banknifty"></div></div>
+<div class="container">
+    <div class="box" id="nifty"></div>
+    <div class="box" id="banknifty"></div>
+    <div class="box" id="sensex"></div>
+    <div class="box" id="finnifty"></div>
+    <div class="box" id="midcap"></div>
+</div>
 
 <script>
-function update(symbol,id){
- fetch('/'+symbol).then(r=>r.json()).then(d=>{
-  document.getElementById(id).innerHTML=
-  `<b>${symbol}</b><br>
-  ${d.signal}<br>
-  Entry:${d.entry}<br>
-  SL:${d.sl}<br>
-  Target:${d.target}<br>
-  RSI:${d.rsi}<br>
-  Confidence:${d.confidence}%`;
- });
+async function loadData(id, url) {
+    try {
+        let res = await fetch(url);
+        let data = await res.json();
+
+        document.getElementById(id).innerHTML = `
+            <h2>${id.toUpperCase()}</h2>
+            <p>${data.signal} | ${data.prediction}</p>
+            <p>Entry: ${data.entry}</p>
+            <p>SL: ${data.sl}</p>
+            <p>Target: ${data.target}</p>
+            <p>Support: ${data.support}</p>
+            <p>Resistance: ${data.resistance}</p>
+        `;
+    } catch (e) {
+        document.getElementById(id).innerHTML = `<h2>${id}</h2><p>Error</p>`;
+    }
 }
 
-function opt(symbol,id){
- fetch('/option/'+symbol).then(r=>r.json()).then(d=>{
-  document.getElementById(id).innerHTML=
-  `<b>${symbol} OPTION</b><br>
-  ${d.signal}<br>
-  CE:${d.ce}<br>
-  PE:${d.pe}`;
- });
+function refresh() {
+    loadData("nifty", "/nifty");
+    loadData("banknifty", "/banknifty");
+    loadData("sensex", "/sensex");
+    loadData("finnifty", "/finnifty");
+    loadData("midcap", "/midcap");
 }
 
-setInterval(()=>{
- update('nifty','nifty');
- update('banknifty','banknifty');
- update('sensex','sensex');
- update('finnifty','finnifty');
- update('midcap','midcap');
-
- opt('nifty','opt_nifty');
- opt('banknifty','opt_banknifty');
-},3000);
+// 🔥 Auto refresh every 5 sec
+setInterval(refresh, 5000);
+refresh();
 </script>
 
 </body>
