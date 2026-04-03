@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OptionGuru Trader</title>
+<title>OptionGuru PRO</title>
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
 body {background:#0d1117;color:white;text-align:center;}
 .card {background:#161b22;padding:15px;margin:10px;border-radius:10px;width:260px;}
 .container {display:flex;flex-wrap:wrap;justify-content:center;}
-.chart {margin-top:20px;}
+button {margin:5px;padding:10px;border:none;border-radius:5px;background:#238636;color:white;}
 </style>
 </head>
 
 <body>
 
-<h1>💰 OptionGuru TRADER MODE</h1>
+<h1>🚀 OptionGuru PRO</h1>
 
 <div class="container">
 <div class="card"><h3>NIFTY</h3><div id="nifty"></div></div>
@@ -24,84 +24,36 @@ body {background:#0d1117;color:white;text-align:center;}
 <div class="card"><h3>MIDCAP</h3><div id="mid"></div></div>
 </div>
 
-<!-- 🔥 ALL INDEX CHARTS -->
+<!-- 🔥 DEMAT STYLE CHART -->
+<div>
+<button onclick="changeChart('NSE:NIFTY')">NIFTY</button>
+<button onclick="changeChart('NSE:BANKNIFTY')">BANKNIFTY</button>
+<button onclick="changeChart('BSE:SENSEX')">SENSEX</button>
+<button onclick="changeChart('NSE:FINNIFTY')">FINNIFTY</button>
+<button onclick="changeChart('NSE:MIDCPNIFTY')">MIDCAP</button>
+</div>
 
-<div class="chart" id="chart_nifty" style="height:400px;"></div>
-<div class="chart" id="chart_bank" style="height:400px;"></div>
-<div class="chart" id="chart_sensex" style="height:400px;"></div>
-<div class="chart" id="chart_fin" style="height:400px;"></div>
-<div class="chart" id="chart_mid" style="height:400px;"></div>
+<div id="chart" style="height:500px;"></div>
 
 <script>
 
-// 🔥 CHARTS LOAD
-new TradingView.widget({
-  "symbol": "NSE:NIFTY",
-  "interval": "5",
-  "theme": "dark",
-  "container_id": "chart_nifty"
-});
-
-new TradingView.widget({
-  "symbol": "NSE:BANKNIFTY",
-  "interval": "5",
-  "theme": "dark",
-  "container_id": "chart_bank"
-});
-
-new TradingView.widget({
-  "symbol": "BSE:SENSEX",
-  "interval": "5",
-  "theme": "dark",
-  "container_id": "chart_sensex"
-});
-
-new TradingView.widget({
-  "symbol": "NSE:FINNIFTY",
-  "interval": "5",
-  "theme": "dark",
-  "container_id": "chart_fin"
-});
-
-new TradingView.widget({
-  "symbol": "NSE:MIDCPNIFTY",
-  "interval": "5",
-  "theme": "dark",
-  "container_id": "chart_mid"
-});
-
-
-// ===== SIGNAL SYSTEM =====
-
-let lastSignal = {};
-
-function alertUser(name,msg){
-    if(msg.includes("STRONG")){
-        let audio = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
-        audio.play();
-        alert(name + " " + msg);
-    }
+function loadChart(symbol){
+    new TradingView.widget({
+        "symbol": symbol,
+        "interval": "5",
+        "theme": "dark",
+        "container_id": "chart"
+    });
 }
 
-function format(x,name){
+loadChart("NSE:NIFTY");
 
-    if(lastSignal[name] && lastSignal[name] != x.signal){
-        alertUser(name,x.signal);
-    }
-
-    lastSignal[name] = x.signal;
-
-    return `
-    ${x.signal}<br>
-    ${x.prediction}<br><br>
-    Entry: ${x.entry}<br>
-    SL: ${x.sl}<br>
-    Target: ${x.target}<br><br>
-    Support: ${x.support}<br>
-    Resistance: ${x.resistance}
-    `;
+function changeChart(symbol){
+    document.getElementById("chart").innerHTML = "";
+    loadChart(symbol);
 }
 
+// 📊 SIGNAL LOAD
 async function load(){
 
     let n = await fetch("/nifty").then(r=>r.json());
@@ -110,11 +62,11 @@ async function load(){
     let f = await fetch("/finnifty").then(r=>r.json());
     let m = await fetch("/midcap").then(r=>r.json());
 
-    document.getElementById("nifty").innerHTML = format(n,"NIFTY");
-    document.getElementById("bank").innerHTML = format(b,"BANKNIFTY");
-    document.getElementById("sensex").innerHTML = format(s,"SENSEX");
-    document.getElementById("fin").innerHTML = format(f,"FINNIFTY");
-    document.getElementById("mid").innerHTML = format(m,"MIDCAP");
+    document.getElementById("nifty").innerHTML = JSON.stringify(n,null,1);
+    document.getElementById("bank").innerHTML = JSON.stringify(b,null,1);
+    document.getElementById("sensex").innerHTML = JSON.stringify(s,null,1);
+    document.getElementById("fin").innerHTML = JSON.stringify(f,null,1);
+    document.getElementById("mid").innerHTML = JSON.stringify(m,null,1);
 }
 
 setInterval(load,8000);
