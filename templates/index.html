@@ -1,54 +1,65 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OptionGuru TRADER MODE</title>
+<title>OptionGuru Hooriya</title>
+
+<script>
+async function loadData() {
+
+    let nifty = await fetch('/nifty').then(r => r.json());
+    let bank = await fetch('/banknifty').then(r => r.json());
+
+    update("nifty", nifty);
+    update("bank", bank);
+}
+
+function update(id, data) {
+    document.getElementById(id).innerHTML = `
+        <h3>${data.signal} | ${data.prediction}</h3>
+        Entry: ${data.entry}<br>
+        SL: ${data.sl}<br>
+        Target: ${data.target}<br>
+        Support: ${data.support}<br>
+        Resistance: ${data.resistance}
+    `;
+}
+
+setInterval(loadData, 5000);
+</script>
 
 <style>
-body { background:#0b1622; color:white; font-family:Arial; text-align:center; }
-.card { background:#162536; padding:20px; margin:10px; display:inline-block; border-radius:10px; width:200px; }
-h2 { color:#00ffd5; }
+body {
+    background:#0b1220;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
+.box {
+    display:inline-block;
+    margin:20px;
+    padding:20px;
+    background:#162034;
+    border-radius:10px;
+    width:250px;
+}
 </style>
 
 </head>
 
 <body>
 
-<h1>💰 OptionGuru TRADER MODE</h1>
+<h1>🚀 OptionGuru Hooriya FINAL</h1>
 
-<div id="cards"></div>
+<div class="box" id="nifty">Loading...</div>
+<div class="box" id="bank">Loading...</div>
 
-<script>
-const indices = ["nifty","banknifty","sensex","finnifty","midcap"];
-
-function loadData() {
-    indices.forEach(i => {
-        fetch("/"+i)
-        .then(res => res.json())
-        .then(data => {
-
-            let card = `
-            <div class="card">
-                <h2>${i.toUpperCase()}</h2>
-                ${data.signal} | ${data.prediction}<br><br>
-                Entry: ${data.entry}<br>
-                SL: ${data.sl}<br>
-                Target: ${data.target}<br>
-                Support: ${data.support}<br>
-                Resistance: ${data.resistance}
-            </div>`;
-
-            document.getElementById("cards").innerHTML += card;
-        });
-    });
-}
-
-setInterval(() => {
-    document.getElementById("cards").innerHTML = "";
-    loadData();
-}, 3000);
-
-loadData();
-</script>
+<!-- 📊 REAL NIFTY CHART -->
+<div style="margin-top:40px;">
+<iframe 
+src="https://s.tradingview.com/widgetembed/?symbol=NSE:NIFTY&interval=5&theme=dark"
+width="90%" height="400">
+</iframe>
+</div>
 
 </body>
 </html>
