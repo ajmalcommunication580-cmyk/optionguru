@@ -1,76 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OptionGuru TRADER MODE</title>
+    <title>OptionGuru Hooriya</title>
     <style>
-        body {
-            background: #0b1320;
-            color: white;
-            font-family: Arial;
-            text-align: center;
-        }
-
-        .container {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 30px;
-        }
-
-        .box {
-            background: #111c2e;
-            padding: 20px;
-            border-radius: 10px;
-            width: 200px;
-        }
-
-        h2 {
-            margin-bottom: 10px;
-        }
+        body { background: #0f172a; color: white; font-family: Arial; text-align: center; }
+        .box { border: 1px solid #333; padding: 15px; margin: 10px; border-radius: 10px; }
     </style>
 </head>
+
 <body>
 
-<h1>💰 OptionGuru TRADER MODE</h1>
+<h1>🚀 OptionGuru Hooriya</h1>
 
-<div class="container">
-    <div class="box" id="nifty"></div>
-    <div class="box" id="banknifty"></div>
-    <div class="box" id="sensex"></div>
-    <div class="box" id="finnifty"></div>
-    <div class="box" id="midcap"></div>
-</div>
+<div class="box" id="nifty">Loading NIFTY...</div>
+<div class="box" id="banknifty">Loading BANKNIFTY...</div>
+
+<h2>📊 Live NIFTY Chart</h2>
+
+<iframe 
+    src="https://www.tradingview.com/widgetembed/?symbol=NSE:NIFTY&interval=5&theme=dark"
+    width="100%" height="400">
+</iframe>
 
 <script>
-async function loadData(id, url) {
-    try {
-        let res = await fetch(url);
-        let data = await res.json();
+async function loadData() {
+    let n = await fetch('/nifty').then(r => r.json());
+    let b = await fetch('/banknifty').then(r => r.json());
 
-        document.getElementById(id).innerHTML = `
-            <h2>${id.toUpperCase()}</h2>
-            <p>${data.signal} | ${data.prediction}</p>
-            <p>Entry: ${data.entry}</p>
-            <p>SL: ${data.sl}</p>
-            <p>Target: ${data.target}</p>
-            <p>Support: ${data.support}</p>
-            <p>Resistance: ${data.resistance}</p>
-        `;
-    } catch (e) {
-        document.getElementById(id).innerHTML = `<h2>${id}</h2><p>Error</p>`;
-    }
+    document.getElementById('nifty').innerHTML =
+        `NIFTY<br>${n.signal} | ${n.prediction}`;
+
+    document.getElementById('banknifty').innerHTML =
+        `BANKNIFTY<br>${b.signal} | ${b.prediction}`;
 }
 
-function refresh() {
-    loadData("nifty", "/nifty");
-    loadData("banknifty", "/banknifty");
-    loadData("sensex", "/sensex");
-    loadData("finnifty", "/finnifty");
-    loadData("midcap", "/midcap");
-}
-
-// 🔥 Auto refresh every 5 sec
-setInterval(refresh, 5000);
-refresh();
+setInterval(loadData, 3000);
+loadData();
 </script>
 
 </body>
