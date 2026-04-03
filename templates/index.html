@@ -8,6 +8,7 @@
 body {background:#0d1117;color:white;text-align:center;}
 .card {background:#161b22;padding:15px;margin:10px;border-radius:10px;width:260px;}
 .container {display:flex;flex-wrap:wrap;justify-content:center;}
+.chart {margin-top:20px;}
 </style>
 </head>
 
@@ -23,16 +24,54 @@ body {background:#0d1117;color:white;text-align:center;}
 <div class="card"><h3>MIDCAP</h3><div id="mid"></div></div>
 </div>
 
-<div id="chart" style="height:500px;"></div>
+<!-- 🔥 ALL INDEX CHARTS -->
+
+<div class="chart" id="chart_nifty" style="height:400px;"></div>
+<div class="chart" id="chart_bank" style="height:400px;"></div>
+<div class="chart" id="chart_sensex" style="height:400px;"></div>
+<div class="chart" id="chart_fin" style="height:400px;"></div>
+<div class="chart" id="chart_mid" style="height:400px;"></div>
 
 <script>
 
+// 🔥 CHARTS LOAD
 new TradingView.widget({
   "symbol": "NSE:NIFTY",
   "interval": "5",
   "theme": "dark",
-  "container_id": "chart"
+  "container_id": "chart_nifty"
 });
+
+new TradingView.widget({
+  "symbol": "NSE:BANKNIFTY",
+  "interval": "5",
+  "theme": "dark",
+  "container_id": "chart_bank"
+});
+
+new TradingView.widget({
+  "symbol": "BSE:SENSEX",
+  "interval": "5",
+  "theme": "dark",
+  "container_id": "chart_sensex"
+});
+
+new TradingView.widget({
+  "symbol": "NSE:FINNIFTY",
+  "interval": "5",
+  "theme": "dark",
+  "container_id": "chart_fin"
+});
+
+new TradingView.widget({
+  "symbol": "NSE:MIDCPNIFTY",
+  "interval": "5",
+  "theme": "dark",
+  "container_id": "chart_mid"
+});
+
+
+// ===== SIGNAL SYSTEM =====
 
 let lastSignal = {};
 
