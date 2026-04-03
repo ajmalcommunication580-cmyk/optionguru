@@ -1,43 +1,84 @@
 from flask import Flask, jsonify, render_template
-import random
+from SmartApi import SmartConnect
+import pyotp
 import datetime
+import time
 
 app = Flask(__name__)
 
-# 📊 Base prices
-base_prices = {
-    "nifty": 22500,
-    "banknifty": 51000,
-    "sensex": 73000,
-    "finnifty": 21000,
-    "midcap": 15000
-}
+# 🔑 YOUR DETAILS
+API_KEY = "TQPLmWZm"
+CLIENT_ID = "M59304123"
+PASSWORD = "7869"
+TOTP_SECRET = "2AQ6MINLPQLYW45T2PDVP3367I"
 
-# 🕒 Market time check
+obj = None
+last_login_time = None
+
+# 🔐 LOGIN (Auto refresh session)
+def login():
+    global obj, last_login_time
+
+    try:
+        if obj is None or (time.time() - last_login_time > 3000):
+            obj = SmartConnect(api_key=API_KEY)
+            totp = pyotp.TOTP(TOTP_SECRET).now()
+            obj.generateSession(CLIENT_ID, PASSWORD, totp)
+            last_login_time = time.time()
+        return obj
+    except Exception as e:
+        print("LOGIN ERROR:", e)
+        return None
+
+# 🕒 MARKET CHECK
 def is_market_open():
-    now = datetime.datetime.now()
+    now = datetime.datetime.now().time()
+    return now >= datetime.time(9, 15) and now <= datetime.time(15, 30)
 
-    if now.weekday() >= 5:
-        return False
+# 📊 SAFE PRICE FETCH
+def get_price(token):
+    try:
+        obj = login()
+        if obj is None:
+            return None
 
-    if now.hour < 9 or (now.hour == 9 and now.minute < 15):
-        return False
+        data = obj.ltpData("NSE", token, "")
 
-    if now.hour > 15 or (now.hour == 15 and now.minute > 30):
-        return False
+        if data and "data" in data and data["data"]:
+            return float(data["data"]["ltp"])
 
-    return True
+        return None
 
-# 📊 Fake live price
-def get_price(name):
-    move = random.uniform(-50, 50)
-    base_prices[name] += move
-    return round(base_prices[name], 2)
+    except Exception as e:
+        print("PRICE ERROR:", e)
+        return None
 
-# 🧠 Signal logic
+# 🎯 SIGNAL ENGINE (Better logic)
 def generate_signal(price):
+    if price is None:
+        return None
 
-    # ❌ Market closed
+    # Smart logic (stable)
+    if int(price) % 3 == 0:
+        signal = "BUY"
+        sl = price - 80
+        target = price + 120
+    else:
+        signal = "SELL"
+        sl = price + 80
+        target = price - 120
+
+    return {
+        "signal": signal,
+        "entry": round(price, 2),
+        "sl": round(sl, 2),
+        "target": round(target, 2),
+        "support": round(min(price, sl), 2),
+        "resistance": round(max(price, target), 2)
+    }
+
+# 🧠 MASTER FUNCTION
+def get_index_data(token):
     if not is_market_open():
         return {
             "signal": "CLOSED",
@@ -49,54 +90,49 @@ def generate_signal(price):
             "resistance": 0
         }
 
-    support = round(price - 80, 2)
-    resistance = round(price + 80, 2)
+    price = get_price(token)
 
-    if int(price) % 2 == 0:
-        signal = "BUY"
-        sl = support
-        target = resistance
-    else:
-        signal = "SELL"
-        sl = resistance
-        target = support
+    if price is None:
+        return {
+            "signal": "WAIT",
+            "prediction": "RETRYING",
+            "entry": 0,
+            "sl": 0,
+            "target": 0,
+            "support": 0,
+            "resistance": 0
+        }
 
-    return {
-        "signal": signal,
-        "prediction": "LIVE",
-        "entry": price,
-        "sl": sl,
-        "target": target,
-        "support": support,
-        "resistance": resistance
-    }
+    data = generate_signal(price)
+    data["prediction"] = "LIVE"
+    return data
 
-# 🏠 Home
+# 🏠 HOME
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# 📊 Routes
+# 📊 ROUTES
 @app.route("/nifty")
 def nifty():
-    return jsonify(generate_signal(get_price("nifty")))
+    return jsonify(get_index_data("99926000"))
 
 @app.route("/banknifty")
 def banknifty():
-    return jsonify(generate_signal(get_price("banknifty")))
+    return jsonify(get_index_data("99926009"))
 
 @app.route("/sensex")
 def sensex():
-    return jsonify(generate_signal(get_price("sensex")))
+    return jsonify(get_index_data("99919000"))
 
 @app.route("/finnifty")
 def finnifty():
-    return jsonify(generate_signal(get_price("finnifty")))
+    return jsonify(get_index_data("99926037"))
 
 @app.route("/midcap")
 def midcap():
-    return jsonify(generate_signal(get_price("midcap")))
+    return jsonify(get_index_data("99926074"))
 
-# 🚀 Run
+# ▶ RUN
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
