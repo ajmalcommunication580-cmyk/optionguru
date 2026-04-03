@@ -1,65 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OptionGuru Hooriya</title>
-
-<script>
-async function loadData() {
-
-    let nifty = await fetch('/nifty').then(r => r.json());
-    let bank = await fetch('/banknifty').then(r => r.json());
-
-    update("nifty", nifty);
-    update("bank", bank);
-}
-
-function update(id, data) {
-    document.getElementById(id).innerHTML = `
-        <h3>${data.signal} | ${data.prediction}</h3>
-        Entry: ${data.entry}<br>
-        SL: ${data.sl}<br>
-        Target: ${data.target}<br>
-        Support: ${data.support}<br>
-        Resistance: ${data.resistance}
-    `;
-}
-
-setInterval(loadData, 5000);
-</script>
+<title>OptionGuru Trader</title>
+<script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
-body {
-    background:#0b1220;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-}
-.box {
-    display:inline-block;
-    margin:20px;
-    padding:20px;
-    background:#162034;
-    border-radius:10px;
-    width:250px;
-}
+body {background:#0d1117;color:white;text-align:center;}
+.card {background:#161b22;padding:15px;margin:10px;border-radius:10px;width:260px;}
+.container {display:flex;flex-wrap:wrap;justify-content:center;}
 </style>
-
 </head>
 
 <body>
 
-<h1>🚀 OptionGuru Hooriya FINAL</h1>
+<h1>💰 OptionGuru TRADER MODE</h1>
 
-<div class="box" id="nifty">Loading...</div>
-<div class="box" id="bank">Loading...</div>
-
-<!-- 📊 REAL NIFTY CHART -->
-<div style="margin-top:40px;">
-<iframe 
-src="https://s.tradingview.com/widgetembed/?symbol=NSE:NIFTY&interval=5&theme=dark"
-width="90%" height="400">
-</iframe>
+<div class="container">
+<div class="card"><h3>NIFTY</h3><div id="nifty"></div></div>
+<div class="card"><h3>BANKNIFTY</h3><div id="bank"></div></div>
+<div class="card"><h3>SENSEX</h3><div id="sensex"></div></div>
+<div class="card"><h3>FINNIFTY</h3><div id="fin"></div></div>
+<div class="card"><h3>MIDCAP</h3><div id="mid"></div></div>
 </div>
+
+<div id="chart" style="height:500px;"></div>
+
+<script>
+
+new TradingView.widget({
+  "symbol": "NSE:NIFTY",
+  "interval": "5",
+  "theme": "dark",
+  "container_id": "chart"
+});
+
+let lastSignal = {};
+
+function alertUser(name,msg){
+    if(msg.includes("STRONG")){
+        let audio = new Audio("https://www.soundjay.com/buttons/sounds/beep-07.mp3");
+        audio.play();
+        alert(name + " " + msg);
+    }
+}
+
+function format(x,name){
+
+    if(lastSignal[name] && lastSignal[name] != x.signal){
+        alertUser(name,x.signal);
+    }
+
+    lastSignal[name] = x.signal;
+
+    return `
+    ${x.signal}<br>
+    ${x.prediction}<br><br>
+    Entry: ${x.entry}<br>
+    SL: ${x.sl}<br>
+    Target: ${x.target}<br><br>
+    Support: ${x.support}<br>
+    Resistance: ${x.resistance}
+    `;
+}
+
+async function load(){
+
+    let n = await fetch("/nifty").then(r=>r.json());
+    let b = await fetch("/banknifty").then(r=>r.json());
+    let s = await fetch("/sensex").then(r=>r.json());
+    let f = await fetch("/finnifty").then(r=>r.json());
+    let m = await fetch("/midcap").then(r=>r.json());
+
+    document.getElementById("nifty").innerHTML = format(n,"NIFTY");
+    document.getElementById("bank").innerHTML = format(b,"BANKNIFTY");
+    document.getElementById("sensex").innerHTML = format(s,"SENSEX");
+    document.getElementById("fin").innerHTML = format(f,"FINNIFTY");
+    document.getElementById("mid").innerHTML = format(m,"MIDCAP");
+}
+
+setInterval(load,8000);
+load();
+
+</script>
 
 </body>
 </html>
