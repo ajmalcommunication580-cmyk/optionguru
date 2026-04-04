@@ -5,10 +5,17 @@
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
-body {background:#0d1117;color:white;text-align:center;}
-.card {background:#161b22;padding:15px;margin:10px;border-radius:10px;width:260px;}
-.container {display:flex;flex-wrap:wrap;justify-content:center;}
-button {margin:5px;padding:10px;border:none;border-radius:5px;background:#238636;color:white;}
+body { background:#0d1117; color:white; font-family:Arial; text-align:center; }
+.container { display:flex; flex-wrap:wrap; justify-content:center; }
+.card {
+    background:#161b22;
+    padding:15px;
+    margin:10px;
+    border-radius:10px;
+    width:200px;
+}
+button { margin:5px; padding:10px; }
+#chart { height:500px; }
 </style>
 </head>
 
@@ -17,61 +24,53 @@ button {margin:5px;padding:10px;border:none;border-radius:5px;background:#238636
 <h1>🚀 OptionGuru PRO</h1>
 
 <div class="container">
-<div class="card"><h3>NIFTY</h3><div id="nifty"></div></div>
-<div class="card"><h3>BANKNIFTY</h3><div id="bank"></div></div>
-<div class="card"><h3>SENSEX</h3><div id="sensex"></div></div>
-<div class="card"><h3>FINNIFTY</h3><div id="fin"></div></div>
-<div class="card"><h3>MIDCAP</h3><div id="mid"></div></div>
+<div class="card" id="niftyBox">NIFTY</div>
+<div class="card" id="bankBox">BANKNIFTY</div>
+<div class="card" id="sensexBox">SENSEX</div>
+<div class="card" id="finBox">FINNIFTY</div>
+<div class="card" id="midBox">MIDCAP</div>
 </div>
 
-<!-- 🔥 DEMAT STYLE CHART -->
 <div>
-<button onclick="changeChart('NSE:NIFTY')">NIFTY</button>
-<button onclick="changeChart('NSE:BANKNIFTY')">BANKNIFTY</button>
-<button onclick="changeChart('BSE:SENSEX')">SENSEX</button>
-<button onclick="changeChart('NSE:FINNIFTY')">FINNIFTY</button>
-<button onclick="changeChart('NSE:MIDCPNIFTY')">MIDCAP</button>
+<button onclick="loadChart('NSE:NIFTY50')">NIFTY</button>
+<button onclick="loadChart('NSE:BANKNIFTY')">BANKNIFTY</button>
+<button onclick="loadChart('BSE:SENSEX')">SENSEX</button>
 </div>
 
-<div id="chart" style="height:500px;"></div>
+<div id="chart"></div>
 
 <script>
-
 function loadChart(symbol){
+    document.getElementById("chart").innerHTML="";
     new TradingView.widget({
+        "container_id": "chart",
+        "width": "100%",
+        "height": 500,
         "symbol": symbol,
         "interval": "5",
-        "theme": "dark",
-        "container_id": "chart"
+        "theme": "dark"
     });
 }
 
-loadChart("NSE:NIFTY");
+loadChart("NSE:NIFTY50");
 
-function changeChart(symbol){
-    document.getElementById("chart").innerHTML = "";
-    loadChart(symbol);
+// 🔥 Data Load
+async function loadData(){
+    let nifty = await fetch("/nifty").then(r=>r.json());
+    let bank = await fetch("/banknifty").then(r=>r.json());
+    let sensex = await fetch("/sensex").then(r=>r.json());
+    let fin = await fetch("/finnifty").then(r=>r.json());
+    let mid = await fetch("/midcap").then(r=>r.json());
+
+    document.getElementById("niftyBox").innerHTML = `NIFTY<br>${nifty.price}<br>${nifty.signal}`;
+    document.getElementById("bankBox").innerHTML = `BANKNIFTY<br>${bank.price}<br>${bank.signal}`;
+    document.getElementById("sensexBox").innerHTML = `SENSEX<br>${sensex.price}<br>${sensex.signal}`;
+    document.getElementById("finBox").innerHTML = `FINNIFTY<br>${fin.price}<br>${fin.signal}`;
+    document.getElementById("midBox").innerHTML = `MIDCAP<br>${mid.price}<br>${mid.signal}`;
 }
 
-// 📊 SIGNAL LOAD
-async function load(){
-
-    let n = await fetch("/nifty").then(r=>r.json());
-    let b = await fetch("/banknifty").then(r=>r.json());
-    let s = await fetch("/sensex").then(r=>r.json());
-    let f = await fetch("/finnifty").then(r=>r.json());
-    let m = await fetch("/midcap").then(r=>r.json());
-
-    document.getElementById("nifty").innerHTML = JSON.stringify(n,null,1);
-    document.getElementById("bank").innerHTML = JSON.stringify(b,null,1);
-    document.getElementById("sensex").innerHTML = JSON.stringify(s,null,1);
-    document.getElementById("fin").innerHTML = JSON.stringify(f,null,1);
-    document.getElementById("mid").innerHTML = JSON.stringify(m,null,1);
-}
-
-setInterval(load,8000);
-load();
-
+loadData();
+setInterval(loadData, 5000);
 </script>
 
 </body>
