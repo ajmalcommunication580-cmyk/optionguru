@@ -62,11 +62,40 @@ async function loadData(){
     let fin = await fetch("/finnifty").then(r=>r.json());
     let mid = await fetch("/midcap").then(r=>r.json());
 
-    document.getElementById("niftyBox").innerHTML = `NIFTY<br>${nifty.price}<br>${nifty.signal}`;
-    document.getElementById("bankBox").innerHTML = `BANKNIFTY<br>${bank.price}<br>${bank.signal}`;
-    document.getElementById("sensexBox").innerHTML = `SENSEX<br>${sensex.price}<br>${sensex.signal}`;
-    document.getElementById("finBox").innerHTML = `FINNIFTY<br>${fin.price}<br>${fin.signal}`;
-    document.getElementById("midBox").innerHTML = `MIDCAP<br>${mid.price}<br>${mid.signal}`;
+    document.getElementById("niftyBox").innerHTML = `
+<b>NIFTY</b><br>
+Price: ${nifty.price}<br>
+Signal: ${nifty.signal}<br>
+S: ${nifty.support} | R: ${nifty.resistance}
+`;
+
+document.getElementById("bankBox").innerHTML = `
+<b>BANKNIFTY</b><br>
+Price: ${bank.price}<br>
+Signal: ${bank.signal}<br>
+S: ${bank.support} | R: ${bank.resistance}
+`;
+
+document.getElementById("sensexBox").innerHTML = `
+<b>SENSEX</b><br>
+Price: ${sensex.price}<br>
+Signal: ${sensex.signal}<br>
+S: ${sensex.support} | R: ${sensex.resistance}
+`;
+
+document.getElementById("finBox").innerHTML = `
+<b>FINNIFTY</b><br>
+Price: ${fin.price}<br>
+Signal: ${fin.signal}<br>
+S: ${fin.support} | R: ${fin.resistance}
+`;
+
+document.getElementById("midBox").innerHTML = `
+<b>MIDCAP</b><br>
+Price: ${mid.price}<br>
+Signal: ${mid.signal}<br>
+S: ${mid.support} | R: ${mid.resistance}
+`;
 }
 
 loadData();
