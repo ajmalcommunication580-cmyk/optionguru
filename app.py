@@ -56,5 +56,4 @@ def finnifty():
 def midcap():
     return jsonify(signal_logic(get_price("^NSEMDCP50")))
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+
