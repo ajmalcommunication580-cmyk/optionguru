@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, render_template
 import yfinance as yf
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="templates")
 
 # 🔥 Fetch Price (STABLE)
 def get_price(symbol):
