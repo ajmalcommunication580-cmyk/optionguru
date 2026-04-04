@@ -1,7 +1,3 @@
 flask
-pandas
 yfinance
-smartapi-python
-pyotp
-logzero
-websocket-client
+gunicorn
