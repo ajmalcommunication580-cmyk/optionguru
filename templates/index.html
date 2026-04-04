@@ -6,7 +6,13 @@
 
 <style>
 body { background:#0d1117; color:white; font-family:Arial; text-align:center; }
-.container { display:flex; flex-wrap:wrap; justify-content:center; }
+
+.container {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+}
+
 .card {
     background:#161b22;
     padding:15px;
@@ -14,8 +20,14 @@ body { background:#0d1117; color:white; font-family:Arial; text-align:center; }
     border-radius:10px;
     width:200px;
 }
+
 button { margin:5px; padding:10px; }
+
 #chart { height:500px; }
+
+@media(max-width:600px){
+    .card { width:90%; }
+}
 </style>
 </head>
 
@@ -24,11 +36,11 @@ button { margin:5px; padding:10px; }
 <h1>🚀 OptionGuru PRO</h1>
 
 <div class="container">
-<div class="card" id="niftyBox">NIFTY</div>
-<div class="card" id="bankBox">BANKNIFTY</div>
-<div class="card" id="sensexBox">SENSEX</div>
-<div class="card" id="finBox">FINNIFTY</div>
-<div class="card" id="midBox">MIDCAP</div>
+<div class="card" id="niftyBox">Loading...</div>
+<div class="card" id="bankBox">Loading...</div>
+<div class="card" id="sensexBox">Loading...</div>
+<div class="card" id="finBox">Loading...</div>
+<div class="card" id="midBox">Loading...</div>
 </div>
 
 <div>
@@ -40,22 +52,28 @@ button { margin:5px; padding:10px; }
 <div id="chart"></div>
 
 <script>
+
+// 🔥 Chart
 function loadChart(symbol){
     document.getElementById("chart").innerHTML="";
     new TradingView.widget({
-        "container_id": "chart",
-        "width": "100%",
-        "height": 500,
-        "symbol": symbol,
-        "interval": "5",
-        "theme": "dark"
+        container_id: "chart",
+        width: "100%",
+        height: 500,
+        symbol: symbol,
+        interval: "5",
+        theme: "dark"
     });
 }
 
 loadChart("NSE:NIFTY50");
 
-// 🔥 Data Load
+// 🔔 Alert tracking
+let lastSignal = "";
+
+// 🔥 Load Data
 async function loadData(){
+
     let nifty = await fetch("/nifty").then(r=>r.json());
     let bank = await fetch("/banknifty").then(r=>r.json());
     let sensex = await fetch("/sensex").then(r=>r.json());
@@ -63,43 +81,52 @@ async function loadData(){
     let mid = await fetch("/midcap").then(r=>r.json());
 
     document.getElementById("niftyBox").innerHTML = `
-<b>NIFTY</b><br>
-Price: ${nifty.price}<br>
-Signal: ${nifty.signal}<br>
-S: ${nifty.support} | R: ${nifty.resistance}
-`;
+    <b>NIFTY</b><br>
+    Price: ${nifty.price}<br>
+    Signal: <span style="color:${nifty.signal==='BUY'?'lime':'red'}">${nifty.signal}</span><br>
+    S: ${nifty.support} | R: ${nifty.resistance}
+    `;
 
-document.getElementById("bankBox").innerHTML = `
-<b>BANKNIFTY</b><br>
-Price: ${bank.price}<br>
-Signal: ${bank.signal}<br>
-S: ${bank.support} | R: ${bank.resistance}
-`;
+    document.getElementById("bankBox").innerHTML = `
+    <b>BANKNIFTY</b><br>
+    Price: ${bank.price}<br>
+    Signal: <span style="color:${bank.signal==='BUY'?'lime':'red'}">${bank.signal}</span><br>
+    S: ${bank.support} | R: ${bank.resistance}
+    `;
 
-document.getElementById("sensexBox").innerHTML = `
-<b>SENSEX</b><br>
-Price: ${sensex.price}<br>
-Signal: ${sensex.signal}<br>
-S: ${sensex.support} | R: ${sensex.resistance}
-`;
+    document.getElementById("sensexBox").innerHTML = `
+    <b>SENSEX</b><br>
+    Price: ${sensex.price}<br>
+    Signal: <span style="color:${sensex.signal==='BUY'?'lime':'red'}">${sensex.signal}</span><br>
+    S: ${sensex.support} | R: ${sensex.resistance}
+    `;
 
-document.getElementById("finBox").innerHTML = `
-<b>FINNIFTY</b><br>
-Price: ${fin.price}<br>
-Signal: ${fin.signal}<br>
-S: ${fin.support} | R: ${fin.resistance}
-`;
+    document.getElementById("finBox").innerHTML = `
+    <b>FINNIFTY</b><br>
+    Price: ${fin.price}<br>
+    Signal: <span style="color:${fin.signal==='BUY'?'lime':'red'}">${fin.signal}</span><br>
+    S: ${fin.support} | R: ${fin.resistance}
+    `;
 
-document.getElementById("midBox").innerHTML = `
-<b>MIDCAP</b><br>
-Price: ${mid.price}<br>
-Signal: ${mid.signal}<br>
-S: ${mid.support} | R: ${mid.resistance}
-`;
+    document.getElementById("midBox").innerHTML = `
+    <b>MIDCAP</b><br>
+    Price: ${mid.price}<br>
+    Signal: <span style="color:${mid.signal==='BUY'?'lime':'red'}">${mid.signal}</span><br>
+    S: ${mid.support} | R: ${mid.resistance}
+    `;
+
+    // 🔔 Alert (NIFTY)
+    if(lastSignal && lastSignal !== nifty.signal){
+        alert("🚨 NIFTY Signal Changed: " + nifty.signal);
+    }
+
+    lastSignal = nifty.signal;
 }
 
+// 🔄 Auto refresh
 loadData();
 setInterval(loadData, 5000);
+
 </script>
 
 </body>
