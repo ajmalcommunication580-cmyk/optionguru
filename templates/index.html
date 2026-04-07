@@ -55,11 +55,11 @@ body {
 
 <!-- Buttons -->
 <div>
-    <button class="btn" onclick="loadChart('NSE:NIFTY50')">NIFTY</button>
-    <button class="btn" onclick="loadChart('NSE:BANKNIFTY')">BANKNIFTY</button>
-    <button class="btn" onclick="loadChart('BSE:SENSEX')">SENSEX</button>
-    <button class="btn" onclick="loadChart('NSE:FINNIFTY')">FINNIFTY</button>
-    <button class="btn" onclick="loadChart('NSE:MIDCPNIFTY')">MIDCAP</button>
+    <button onclick="loadChart('NSE:NIFTY')">NIFTY</button>
+<button onclick="loadChart('NSE:BANKNIFTY')">BANKNIFTY</button>
+<button onclick="loadChart('BSE:SENSEX')">SENSEX</button>
+<button onclick="loadChart('NSE:FINNIFTY')">FINNIFTY</button>
+<button onclick="loadChart('NSE:NIFTY_MIDCAP_50')">MIDCAP</button>
 </div>
 
 <!-- Chart -->
@@ -85,7 +85,7 @@ function loadChart(symbol) {
 }
 
 // Default Chart
-loadChart("NSE:NIFTY50");
+loadChart("NSE:NIFTY");
 
 // 🎨 Signal Color
 function color(signal){
