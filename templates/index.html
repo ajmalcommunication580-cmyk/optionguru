@@ -22,7 +22,7 @@ body {
     margin:10px;
     padding:15px;
     border-radius:10px;
-    width:180px;
+    width:200px;
 }
 
 .btn {
@@ -43,7 +43,7 @@ body {
 
 <body>
 
-<h1>🚀 OptionGuru PRO</h1>
+<h1>🚀 OptionGuru PRO (ULTRA AI)</h1>
 
 <div class="container">
     <div id="niftyBox" class="box">Loading...</div>
@@ -55,7 +55,7 @@ body {
 
 <!-- Buttons -->
 <div>
-    <button class="btn" onclick="loadChart('NSE:NIFTY')">NIFTY</button>
+    <button class="btn" onclick="loadChart('NSE:NIFTY50')">NIFTY</button>
     <button class="btn" onclick="loadChart('NSE:BANKNIFTY')">BANKNIFTY</button>
     <button class="btn" onclick="loadChart('BSE:SENSEX')">SENSEX</button>
     <button class="btn" onclick="loadChart('NSE:FINNIFTY')">FINNIFTY</button>
@@ -68,6 +68,7 @@ body {
 <script src="https://s3.tradingview.com/tv.js"></script>
 
 <script>
+// 🔥 Chart Load
 function loadChart(symbol) {
     document.getElementById("tradingview_chart").innerHTML = "";
 
@@ -84,14 +85,16 @@ function loadChart(symbol) {
 }
 
 // Default Chart
-loadChart("NSE:NIFTY");
+loadChart("NSE:NIFTY50");
 
-// 🔥 Signal Color
+// 🎨 Signal Color
 function color(signal){
-    return signal === "BUY" ? "lime" : "red";
+    if(signal.includes("BUY")) return "lime";
+    if(signal.includes("SELL")) return "red";
+    return "yellow";
 }
 
-// 🔥 Fetch Data
+// 📊 Fetch Data
 async function fetchData() {
     let nifty = await fetch('/nifty').then(res=>res.json());
     let bank = await fetch('/banknifty').then(res=>res.json());
@@ -103,30 +106,45 @@ async function fetchData() {
     `NIFTY<br>
     Price: ${nifty.price}<br>
     <span style="color:${color(nifty.signal)}">${nifty.signal}</span><br>
+    Trend: ${nifty.trend}<br>
+    Risk: ${nifty.risk}<br>
+    Confidence: ${nifty.confidence}%<br>
     SL: ${nifty.sl} | Target: ${nifty.target}`;
 
     document.getElementById("bankBox").innerHTML =
     `BANKNIFTY<br>
     Price: ${bank.price}<br>
     <span style="color:${color(bank.signal)}">${bank.signal}</span><br>
+    Trend: ${bank.trend}<br>
+    Risk: ${bank.risk}<br>
+    Confidence: ${bank.confidence}%<br>
     SL: ${bank.sl} | Target: ${bank.target}`;
 
     document.getElementById("sensexBox").innerHTML =
     `SENSEX<br>
     Price: ${sensex.price}<br>
     <span style="color:${color(sensex.signal)}">${sensex.signal}</span><br>
+    Trend: ${sensex.trend}<br>
+    Risk: ${sensex.risk}<br>
+    Confidence: ${sensex.confidence}%<br>
     SL: ${sensex.sl} | Target: ${sensex.target}`;
 
     document.getElementById("finBox").innerHTML =
     `FINNIFTY<br>
     Price: ${fin.price}<br>
     <span style="color:${color(fin.signal)}">${fin.signal}</span><br>
+    Trend: ${fin.trend}<br>
+    Risk: ${fin.risk}<br>
+    Confidence: ${fin.confidence}%<br>
     SL: ${fin.sl} | Target: ${fin.target}`;
 
     document.getElementById("midBox").innerHTML =
     `MIDCAP<br>
     Price: ${mid.price}<br>
     <span style="color:${color(mid.signal)}">${mid.signal}</span><br>
+    Trend: ${mid.trend}<br>
+    Risk: ${mid.risk}<br>
+    Confidence: ${mid.confidence}%<br>
     SL: ${mid.sl} | Target: ${mid.target}`;
 }
 
