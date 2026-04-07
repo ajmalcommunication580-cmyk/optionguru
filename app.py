@@ -126,3 +126,33 @@ def pro():
         "price": round(price,2),
         "signal": signal
     })
+@app.route("/option")
+def option_data():
+    import yfinance as yf
+
+    data = yf.Ticker("^NSEI").history(period="1d", interval="5m")
+
+    if data.empty:
+        return jsonify({"error": "No Data"})
+
+    close = data['Close']
+    price = float(close.iloc[-1])
+
+    # 🔥 Fake but smart logic (safe)
+    ce_strength = round(price % 100)
+    pe_strength = round(100 - ce_strength)
+
+    if ce_strength > pe_strength:
+        direction = "CALL SIDE STRONG 📈"
+        entry = "BUY CE"
+    else:
+        direction = "PUT SIDE STRONG 📉"
+        entry = "BUY PE"
+
+    return jsonify({
+        "price": round(price,2),
+        "ce": ce_strength,
+        "pe": pe_strength,
+        "direction": direction,
+        "entry": entry
+    })
