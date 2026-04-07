@@ -2,7 +2,6 @@
 <html>
 <head>
 <title>OptionGuru PRO</title>
-    <h3 id="marketStatus" style="text-align:center; color:yellow;"></h3>
 
 <style>
 body {
@@ -46,6 +45,9 @@ body {
 
 <h1>🚀 OptionGuru PRO (ULTRA AI)</h1>
 
+<!-- ✅ MARKET STATUS -->
+<h3 id="marketStatus" style="color:yellow;"></h3>
+
 <div class="container">
     <div id="niftyBox" class="box">Loading...</div>
     <div id="bankBox" class="box">Loading...</div>
@@ -63,7 +65,7 @@ body {
     <button class="btn" onclick="changeChart('NSE:NIFTY_MIDCAP_50')">MIDCAP</button>
 </div>
 
-<!-- 🔥 STABLE CHART -->
+<!-- CHART -->
 <div id="chartBox" style="height:500px; margin-top:20px;">
     <iframe id="chartFrame"
         src="https://www.tradingview.com/widgetembed/?symbol=NSE:BANKNIFTY&interval=5&theme=dark"
@@ -72,7 +74,7 @@ body {
 </div>
 
 <script>
-// 🔥 Chart Change (NO ERROR)
+// 🔥 Chart Change
 function changeChart(symbol) {
     document.getElementById("chartFrame").src =
     `https://www.tradingview.com/widgetembed/?symbol=${symbol}&interval=5&theme=dark`;
@@ -83,6 +85,35 @@ function color(signal){
     if(signal.includes("BUY")) return "lime";
     if(signal.includes("SELL")) return "red";
     return "yellow";
+}
+
+// 🔥 MARKET STATUS
+function updateMarketStatus(nifty, bank){
+    let status = "SIDEWAYS";
+
+    if(nifty.signal.includes("BUY") && bank.signal.includes("BUY")){
+        status = "BULLISH 🚀";
+    } 
+    else if(nifty.signal.includes("SELL") && bank.signal.includes("SELL")){
+        status = "BEARISH 🔻";
+    }
+
+    document.getElementById("marketStatus").innerHTML = "Market: " + status;
+}
+
+// 🔔 ALERT (SMART - repeat nahi karega)
+let lastSignals = {};
+
+function checkAlert(data, name){
+    if(lastSignals[name] !== data.signal){
+        if(data.signal.includes("STRONG BUY")){
+            alert(name + " STRONG BUY 🔥");
+        }
+        else if(data.signal.includes("STRONG SELL")){
+            alert(name + " STRONG SELL ⚠️");
+        }
+        lastSignals[name] = data.signal;
+    }
 }
 
 // 📊 Fetch Data
@@ -138,9 +169,15 @@ async function fetchData() {
     Risk: ${mid.risk}<br>
     Confidence: ${mid.confidence}%<br>
     SL: ${mid.sl} | Target: ${mid.target}`;
+
+    // 🔥 NEW FEATURES
+    updateMarketStatus(nifty, bank);
+
+    checkAlert(nifty, "NIFTY");
+    checkAlert(bank, "BANKNIFTY");
 }
 
-// 🔄 AUTO REFRESH
+// 🔄 AUTO REFRESH (5 sec)
 setInterval(fetchData, 5000);
 fetchData();
 </script>
