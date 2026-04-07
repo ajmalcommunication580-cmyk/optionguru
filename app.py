@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template
 import yfinance as yf
+import numpy as np
 
 app = Flask(__name__, template_folder="templates")
 
@@ -11,45 +12,62 @@ def get_data(symbol):
     except:
         return None
 
-# 🤖 AI LOGIC
-def ai_signal(data):
+# 🧠 ULTRA AI LOGIC
+def ultra_ai(data):
     if data is None or data.empty:
         return {"signal": "WAIT", "price": 0}
 
     close = data['Close']
 
     price = float(close.iloc[-1])
-    sma_20 = close.rolling(20).mean().iloc[-1]
-    sma_50 = close.rolling(50).mean().iloc[-1]
+
+    sma20 = close.rolling(20).mean().iloc[-1]
+    sma50 = close.rolling(50).mean().iloc[-1]
 
     momentum = price - close.iloc[-5]
+    volatility = np.std(close[-20:])
 
-    # 🤖 Decision Logic
-    if price > sma_20 and sma_20 > sma_50 and momentum > 0:
+    # 🔥 Market Strength
+    if price > sma20 > sma50:
+        trend = "BULLISH"
+    elif price < sma20 < sma50:
+        trend = "BEARISH"
+    else:
+        trend = "SIDEWAYS"
+
+    # 🔥 Signal Logic
+    if trend == "BULLISH" and momentum > 0:
         signal = "STRONG BUY"
         confidence = 90
-    elif price > sma_20:
-        signal = "BUY"
-        confidence = 70
-    elif price < sma_20 and sma_20 < sma_50:
+    elif trend == "BEARISH" and momentum < 0:
         signal = "STRONG SELL"
         confidence = 90
-    elif price < sma_20:
+    elif trend == "BULLISH":
+        signal = "BUY"
+        confidence = 70
+    elif trend == "BEARISH":
         signal = "SELL"
         confidence = 70
     else:
         signal = "HOLD"
         confidence = 50
 
-    support = round(price - 100, 2)
-    resistance = round(price + 100, 2)
-    target = round(price + 150, 2)
-    sl = round(price - 80, 2)
+    # 🔥 Smart Levels
+    support = round(price - volatility, 2)
+    resistance = round(price + volatility, 2)
+
+    target = round(price + (volatility * 1.5), 2)
+    sl = round(price - (volatility * 1.2), 2)
+
+    # 🔥 Risk Level
+    risk = "LOW" if volatility < 50 else "HIGH"
 
     return {
         "price": round(price,2),
         "signal": signal,
         "confidence": confidence,
+        "trend": trend,
+        "risk": risk,
         "support": support,
         "resistance": resistance,
         "target": target,
@@ -64,20 +82,20 @@ def home():
 # 📊 APIs
 @app.route("/nifty")
 def nifty():
-    return jsonify(ai_signal(get_data("^NSEI")))
+    return jsonify(ultra_ai(get_data("^NSEI")))
 
 @app.route("/banknifty")
 def banknifty():
-    return jsonify(ai_signal(get_data("^NSEBANK")))
+    return jsonify(ultra_ai(get_data("^NSEBANK")))
 
 @app.route("/sensex")
 def sensex():
-    return jsonify(ai_signal(get_data("^BSESN")))
+    return jsonify(ultra_ai(get_data("^BSESN")))
 
 @app.route("/finnifty")
 def finnifty():
-    return jsonify(ai_signal(get_data("^CNXFIN")))
+    return jsonify(ultra_ai(get_data("^CNXFIN")))
 
 @app.route("/midcap")
 def midcap():
-    return jsonify(ai_signal(get_data("^NSEMDCP50")))
+    return jsonify(ultra_ai(get_data("^NSEMDCP50")))
