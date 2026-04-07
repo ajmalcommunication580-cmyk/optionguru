@@ -3,31 +3,57 @@ import yfinance as yf
 
 app = Flask(__name__, template_folder="templates")
 
-# 🔥 Fetch Price (STABLE)
-def get_price(symbol):
+# 🔥 Fetch Data
+def get_data(symbol):
     try:
-        data = yf.Ticker(symbol).history(period="1d", interval="5m")
-        if not data.empty:
-            return float(data['Close'].iloc[-1])
-        return None
+        data = yf.Ticker(symbol).history(period="5d", interval="5m")
+        return data
     except:
         return None
 
-# 🔥 Signal Logic
-def signal_logic(price):
-    if price is None:
+# 🤖 AI LOGIC
+def ai_signal(data):
+    if data is None or data.empty:
         return {"signal": "WAIT", "price": 0}
+
+    close = data['Close']
+
+    price = float(close.iloc[-1])
+    sma_20 = close.rolling(20).mean().iloc[-1]
+    sma_50 = close.rolling(50).mean().iloc[-1]
+
+    momentum = price - close.iloc[-5]
+
+    # 🤖 Decision Logic
+    if price > sma_20 and sma_20 > sma_50 and momentum > 0:
+        signal = "STRONG BUY"
+        confidence = 90
+    elif price > sma_20:
+        signal = "BUY"
+        confidence = 70
+    elif price < sma_20 and sma_20 < sma_50:
+        signal = "STRONG SELL"
+        confidence = 90
+    elif price < sma_20:
+        signal = "SELL"
+        confidence = 70
+    else:
+        signal = "HOLD"
+        confidence = 50
 
     support = round(price - 100, 2)
     resistance = round(price + 100, 2)
-
-    signal = "BUY" if price > support else "SELL"
+    target = round(price + 150, 2)
+    sl = round(price - 80, 2)
 
     return {
-        "price": price,
+        "price": round(price,2),
         "signal": signal,
+        "confidence": confidence,
         "support": support,
-        "resistance": resistance
+        "resistance": resistance,
+        "target": target,
+        "sl": sl
     }
 
 # 🏠 UI
@@ -38,22 +64,20 @@ def home():
 # 📊 APIs
 @app.route("/nifty")
 def nifty():
-    return jsonify(signal_logic(get_price("^NSEI")))
+    return jsonify(ai_signal(get_data("^NSEI")))
 
 @app.route("/banknifty")
 def banknifty():
-    return jsonify(signal_logic(get_price("^NSEBANK")))
+    return jsonify(ai_signal(get_data("^NSEBANK")))
 
 @app.route("/sensex")
 def sensex():
-    return jsonify(signal_logic(get_price("^BSESN")))
+    return jsonify(ai_signal(get_data("^BSESN")))
 
 @app.route("/finnifty")
 def finnifty():
-    return jsonify(signal_logic(get_price("^CNXFIN")))
+    return jsonify(ai_signal(get_data("^CNXFIN")))
 
 @app.route("/midcap")
 def midcap():
-    return jsonify(signal_logic(get_price("^NSEMDCP50")))
-
-
+    return jsonify(ai_signal(get_data("^NSEMDCP50")))
