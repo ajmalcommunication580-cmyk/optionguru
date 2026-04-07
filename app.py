@@ -99,3 +99,30 @@ def finnifty():
 @app.route("/midcap")
 def midcap():
     return jsonify(ultra_ai(get_data("^NSEMDCP50")))
+@app.route("/pro")
+def pro():
+    import yfinance as yf
+
+    data = yf.Ticker("^NSEI").history(period="5d", interval="5m")
+
+    if data.empty:
+        return jsonify({"error": "No Data"})
+
+    close = data['Close']
+    price = float(close.iloc[-1])
+
+    sma20 = close.rolling(20).mean().iloc[-1]
+    sma50 = close.rolling(50).mean().iloc[-1]
+
+    # Simple PRO logic
+    if price > sma20 > sma50:
+        signal = "PRO BUY"
+    elif price < sma20 < sma50:
+        signal = "PRO SELL"
+    else:
+        signal = "WAIT"
+
+    return jsonify({
+        "price": round(price,2),
+        "signal": signal
+    })
