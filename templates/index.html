@@ -45,7 +45,6 @@ body {
 
 <h1>🚀 OptionGuru PRO (ULTRA AI)</h1>
 
-<!-- ✅ MARKET STATUS -->
 <h3 id="marketStatus" style="color:yellow;"></h3>
 
 <div class="container">
@@ -54,6 +53,9 @@ body {
     <div id="sensexBox" class="box">Loading...</div>
     <div id="finBox" class="box">Loading...</div>
     <div id="midBox" class="box">Loading...</div>
+
+    <!-- 🔥 NEW OPTION AI BOX -->
+    <div id="optionBox" class="box">Option Loading...</div>
 </div>
 
 <!-- BUTTONS -->
@@ -74,20 +76,20 @@ body {
 </div>
 
 <script>
-// 🔥 Chart Change
+// Chart
 function changeChart(symbol) {
     document.getElementById("chartFrame").src =
     `https://www.tradingview.com/widgetembed/?symbol=${symbol}&interval=5&theme=dark`;
 }
 
-// 🎨 Color
+// Color
 function color(signal){
     if(signal.includes("BUY")) return "lime";
     if(signal.includes("SELL")) return "red";
     return "yellow";
 }
 
-// 🔥 MARKET STATUS
+// Market Status
 function updateMarketStatus(nifty, bank){
     let status = "SIDEWAYS";
 
@@ -101,9 +103,8 @@ function updateMarketStatus(nifty, bank){
     document.getElementById("marketStatus").innerHTML = "Market: " + status;
 }
 
-// 🔔 ALERT (SMART - repeat nahi karega)
+// Alert
 let lastSignals = {};
-
 function checkAlert(data, name){
     if(lastSignals[name] !== data.signal){
         if(data.signal.includes("STRONG BUY")){
@@ -116,68 +117,57 @@ function checkAlert(data, name){
     }
 }
 
-// 📊 Fetch Data
+// Fetch Data
 async function fetchData() {
 
-    let nifty = await fetch('/nifty').then(res=>res.json());
-    let bank = await fetch('/banknifty').then(res=>res.json());
-    let sensex = await fetch('/sensex').then(res=>res.json());
-    let fin = await fetch('/finnifty').then(res=>res.json());
-    let mid = await fetch('/midcap').then(res=>res.json());
+    let nifty = await fetch('/nifty').then(r=>r.json());
+    let bank = await fetch('/banknifty').then(r=>r.json());
+    let sensex = await fetch('/sensex').then(r=>r.json());
+    let fin = await fetch('/finnifty').then(r=>r.json());
+    let mid = await fetch('/midcap').then(r=>r.json());
+    let option = await fetch('/option').then(r=>r.json());
 
     document.getElementById("niftyBox").innerHTML =
-    `NIFTY<br>
-    Price: ${nifty.price}<br>
+    `NIFTY<br>Price: ${nifty.price}<br>
     <span style="color:${color(nifty.signal)}">${nifty.signal}</span><br>
     Trend: ${nifty.trend}<br>
-    Risk: ${nifty.risk}<br>
     Confidence: ${nifty.confidence}%<br>
     SL: ${nifty.sl} | Target: ${nifty.target}`;
 
     document.getElementById("bankBox").innerHTML =
-    `BANKNIFTY<br>
-    Price: ${bank.price}<br>
+    `BANKNIFTY<br>Price: ${bank.price}<br>
     <span style="color:${color(bank.signal)}">${bank.signal}</span><br>
     Trend: ${bank.trend}<br>
-    Risk: ${bank.risk}<br>
     Confidence: ${bank.confidence}%<br>
     SL: ${bank.sl} | Target: ${bank.target}`;
 
     document.getElementById("sensexBox").innerHTML =
-    `SENSEX<br>
-    Price: ${sensex.price}<br>
-    <span style="color:${color(sensex.signal)}">${sensex.signal}</span><br>
-    Trend: ${sensex.trend}<br>
-    Risk: ${sensex.risk}<br>
-    Confidence: ${sensex.confidence}%<br>
-    SL: ${sensex.sl} | Target: ${sensex.target}`;
+    `SENSEX<br>Price: ${sensex.price}<br>
+    <span style="color:${color(sensex.signal)}">${sensex.signal}</span>`;
 
     document.getElementById("finBox").innerHTML =
-    `FINNIFTY<br>
-    Price: ${fin.price}<br>
-    <span style="color:${color(fin.signal)}">${fin.signal}</span><br>
-    Trend: ${fin.trend}<br>
-    Risk: ${fin.risk}<br>
-    Confidence: ${fin.confidence}%<br>
-    SL: ${fin.sl} | Target: ${fin.target}`;
+    `FINNIFTY<br>Price: ${fin.price}<br>
+    <span style="color:${color(fin.signal)}">${fin.signal}</span>`;
 
     document.getElementById("midBox").innerHTML =
-    `MIDCAP<br>
-    Price: ${mid.price}<br>
-    <span style="color:${color(mid.signal)}">${mid.signal}</span><br>
-    Trend: ${mid.trend}<br>
-    Risk: ${mid.risk}<br>
-    Confidence: ${mid.confidence}%<br>
-    SL: ${mid.sl} | Target: ${mid.target}`;
+    `MIDCAP<br>Price: ${mid.price}<br>
+    <span style="color:${color(mid.signal)}">${mid.signal}</span>`;
 
-    // 🔥 NEW FEATURES
+    // 🔥 OPTION AI
+    document.getElementById("optionBox").innerHTML =
+    `OPTION AI<br>
+    Price: ${option.price}<br>
+    CE: ${option.ce} | PE: ${option.pe}<br>
+    ${option.direction}<br>
+    Entry: ${option.entry}`;
+
     updateMarketStatus(nifty, bank);
 
     checkAlert(nifty, "NIFTY");
     checkAlert(bank, "BANKNIFTY");
 }
 
-// 🔄 AUTO REFRESH (5 sec)
+// Auto Refresh
 setInterval(fetchData, 5000);
 fetchData();
 </script>
