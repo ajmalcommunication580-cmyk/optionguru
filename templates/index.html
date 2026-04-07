@@ -45,6 +45,7 @@ body {
 
 <h1>🚀 OptionGuru PRO (ULTRA AI)</h1>
 
+<!-- Market Status -->
 <h3 id="marketStatus" style="color:yellow;"></h3>
 
 <div class="container">
@@ -54,11 +55,11 @@ body {
     <div id="finBox" class="box">Loading...</div>
     <div id="midBox" class="box">Loading...</div>
 
-    <!-- 🔥 NEW OPTION AI BOX -->
+    <!-- ✅ OPTION AI BOX -->
     <div id="optionBox" class="box">Option Loading...</div>
 </div>
 
-<!-- BUTTONS -->
+<!-- Buttons -->
 <div>
     <button class="btn" onclick="changeChart('NSE:BANKNIFTY')">BANKNIFTY</button>
     <button class="btn" onclick="changeChart('NSE:NIFTY')">NIFTY</button>
@@ -67,7 +68,7 @@ body {
     <button class="btn" onclick="changeChart('NSE:NIFTY_MIDCAP_50')">MIDCAP</button>
 </div>
 
-<!-- CHART -->
+<!-- Chart -->
 <div id="chartBox" style="height:500px; margin-top:20px;">
     <iframe id="chartFrame"
         src="https://www.tradingview.com/widgetembed/?symbol=NSE:BANKNIFTY&interval=5&theme=dark"
@@ -103,7 +104,7 @@ function updateMarketStatus(nifty, bank){
     document.getElementById("marketStatus").innerHTML = "Market: " + status;
 }
 
-// Alert
+// Alert system
 let lastSignals = {};
 function checkAlert(data, name){
     if(lastSignals[name] !== data.signal){
@@ -130,15 +131,11 @@ async function fetchData() {
     document.getElementById("niftyBox").innerHTML =
     `NIFTY<br>Price: ${nifty.price}<br>
     <span style="color:${color(nifty.signal)}">${nifty.signal}</span><br>
-    Trend: ${nifty.trend}<br>
-    Confidence: ${nifty.confidence}%<br>
     SL: ${nifty.sl} | Target: ${nifty.target}`;
 
     document.getElementById("bankBox").innerHTML =
     `BANKNIFTY<br>Price: ${bank.price}<br>
     <span style="color:${color(bank.signal)}">${bank.signal}</span><br>
-    Trend: ${bank.trend}<br>
-    Confidence: ${bank.confidence}%<br>
     SL: ${bank.sl} | Target: ${bank.target}`;
 
     document.getElementById("sensexBox").innerHTML =
@@ -153,7 +150,7 @@ async function fetchData() {
     `MIDCAP<br>Price: ${mid.price}<br>
     <span style="color:${color(mid.signal)}">${mid.signal}</span>`;
 
-    // 🔥 OPTION AI
+    // ✅ OPTION AI DISPLAY (FIXED)
     document.getElementById("optionBox").innerHTML =
     `OPTION AI<br>
     Price: ${option.price}<br>
