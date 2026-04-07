@@ -72,18 +72,22 @@ body {
 function loadChart(symbol) {
     document.getElementById("tradingview_chart").innerHTML = "";
 
-    new TradingView.widget({
-        "width": "100%",
-        "height": 500,
-        "symbol": symbol,
-        "interval": "5",
-        "timezone": "Asia/Kolkata",
-        "theme": "dark",
-        "style": "1",
-        "container_id": "tradingview_chart"
-    });
+    setTimeout(() => {
+        new TradingView.widget({
+            "autosize": true,
+            "symbol": symbol,
+            "interval": "5",
+            "timezone": "Asia/Kolkata",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "toolbar_bg": "#0b0f19",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "container_id": "tradingview_chart"
+        });
+    }, 200);
 }
-
 // Default Chart
 loadChart("NSE:NIFTY");
 
