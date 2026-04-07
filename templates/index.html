@@ -2,31 +2,41 @@
 <html>
 <head>
 <title>OptionGuru PRO</title>
-<script src="https://s3.tradingview.com/tv.js"></script>
 
 <style>
-body { background:#0d1117; color:white; font-family:Arial; text-align:center; }
+body {
+    background:#0b0f19;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+}
 
 .container {
     display:flex;
-    flex-wrap:wrap;
     justify-content:center;
+    flex-wrap:wrap;
 }
 
-.card {
-    background:#161b22;
-    padding:15px;
+.box {
+    background:#111827;
     margin:10px;
+    padding:15px;
     border-radius:10px;
-    width:200px;
+    width:180px;
 }
 
-button { margin:5px; padding:10px; }
+.btn {
+    padding:10px 15px;
+    margin:5px;
+    background:#00c853;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
 
-#chart { height:500px; }
-
-@media(max-width:600px){
-    .card { width:90%; }
+.btn:hover {
+    background:#009624;
 }
 </style>
 </head>
@@ -36,97 +46,93 @@ button { margin:5px; padding:10px; }
 <h1>🚀 OptionGuru PRO</h1>
 
 <div class="container">
-<div class="card" id="niftyBox">Loading...</div>
-<div class="card" id="bankBox">Loading...</div>
-<div class="card" id="sensexBox">Loading...</div>
-<div class="card" id="finBox">Loading...</div>
-<div class="card" id="midBox">Loading...</div>
+    <div id="niftyBox" class="box">Loading...</div>
+    <div id="bankBox" class="box">Loading...</div>
+    <div id="sensexBox" class="box">Loading...</div>
+    <div id="finBox" class="box">Loading...</div>
+    <div id="midBox" class="box">Loading...</div>
 </div>
 
+<!-- Buttons -->
 <div>
-<button onclick="loadChart('NSE:NIFTY50')">NIFTY</button>
-<button onclick="loadChart('NSE:BANKNIFTY')">BANKNIFTY</button>
-<button onclick="loadChart('BSE:SENSEX')">SENSEX</button>
+    <button class="btn" onclick="loadChart('NSE:NIFTY')">NIFTY</button>
+    <button class="btn" onclick="loadChart('NSE:BANKNIFTY')">BANKNIFTY</button>
+    <button class="btn" onclick="loadChart('BSE:SENSEX')">SENSEX</button>
+    <button class="btn" onclick="loadChart('NSE:FINNIFTY')">FINNIFTY</button>
+    <button class="btn" onclick="loadChart('NSE:MIDCPNIFTY')">MIDCAP</button>
 </div>
 
-<div id="chart"></div>
+<!-- Chart -->
+<div id="tradingview_chart" style="height:500px; margin-top:20px;"></div>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
 
 <script>
+function loadChart(symbol) {
+    document.getElementById("tradingview_chart").innerHTML = "";
 
-// 🔥 Chart
-function loadChart(symbol){
-    document.getElementById("chart").innerHTML="";
     new TradingView.widget({
-        container_id: "chart",
-        width: "100%",
-        height: 500,
-        symbol: symbol,
-        interval: "5",
-        theme: "dark"
+        "width": "100%",
+        "height": 500,
+        "symbol": symbol,
+        "interval": "5",
+        "timezone": "Asia/Kolkata",
+        "theme": "dark",
+        "style": "1",
+        "container_id": "tradingview_chart"
     });
 }
 
-loadChart("NSE:NIFTY50");
+// Default Chart
+loadChart("NSE:NIFTY");
 
-// 🔔 Alert tracking
-let lastSignal = "";
-
-// 🔥 Load Data
-async function loadData(){
-
-    let nifty = await fetch("/nifty").then(r=>r.json());
-    let bank = await fetch("/banknifty").then(r=>r.json());
-    let sensex = await fetch("/sensex").then(r=>r.json());
-    let fin = await fetch("/finnifty").then(r=>r.json());
-    let mid = await fetch("/midcap").then(r=>r.json());
-
-    document.getElementById("niftyBox").innerHTML = `
-    <b>NIFTY</b><br>
-    Price: ${nifty.price}<br>
-    Signal: <span style="color:${nifty.signal==='BUY'?'lime':'red'}">${nifty.signal}</span><br>
-    S: ${nifty.support} | R: ${nifty.resistance}
-    `;
-
-    document.getElementById("bankBox").innerHTML = `
-    <b>BANKNIFTY</b><br>
-    Price: ${bank.price}<br>
-    Signal: <span style="color:${bank.signal==='BUY'?'lime':'red'}">${bank.signal}</span><br>
-    S: ${bank.support} | R: ${bank.resistance}
-    `;
-
-    document.getElementById("sensexBox").innerHTML = `
-    <b>SENSEX</b><br>
-    Price: ${sensex.price}<br>
-    Signal: <span style="color:${sensex.signal==='BUY'?'lime':'red'}">${sensex.signal}</span><br>
-    S: ${sensex.support} | R: ${sensex.resistance}
-    `;
-
-    document.getElementById("finBox").innerHTML = `
-    <b>FINNIFTY</b><br>
-    Price: ${fin.price}<br>
-    Signal: <span style="color:${fin.signal==='BUY'?'lime':'red'}">${fin.signal}</span><br>
-    S: ${fin.support} | R: ${fin.resistance}
-    `;
-
-    document.getElementById("midBox").innerHTML = `
-    <b>MIDCAP</b><br>
-    Price: ${mid.price}<br>
-    Signal: <span style="color:${mid.signal==='BUY'?'lime':'red'}">${mid.signal}</span><br>
-    S: ${mid.support} | R: ${mid.resistance}
-    `;
-
-    // 🔔 Alert (NIFTY)
-    if(lastSignal && lastSignal !== nifty.signal){
-        alert("🚨 NIFTY Signal Changed: " + nifty.signal);
-    }
-
-    lastSignal = nifty.signal;
+// 🔥 Signal Color
+function color(signal){
+    return signal === "BUY" ? "lime" : "red";
 }
 
-// 🔄 Auto refresh
-loadData();
-setInterval(loadData, 5000);
+// 🔥 Fetch Data
+async function fetchData() {
+    let nifty = await fetch('/nifty').then(res=>res.json());
+    let bank = await fetch('/banknifty').then(res=>res.json());
+    let sensex = await fetch('/sensex').then(res=>res.json());
+    let fin = await fetch('/finnifty').then(res=>res.json());
+    let mid = await fetch('/midcap').then(res=>res.json());
 
+    document.getElementById("niftyBox").innerHTML =
+    `NIFTY<br>
+    Price: ${nifty.price}<br>
+    <span style="color:${color(nifty.signal)}">${nifty.signal}</span><br>
+    SL: ${nifty.sl} | Target: ${nifty.target}`;
+
+    document.getElementById("bankBox").innerHTML =
+    `BANKNIFTY<br>
+    Price: ${bank.price}<br>
+    <span style="color:${color(bank.signal)}">${bank.signal}</span><br>
+    SL: ${bank.sl} | Target: ${bank.target}`;
+
+    document.getElementById("sensexBox").innerHTML =
+    `SENSEX<br>
+    Price: ${sensex.price}<br>
+    <span style="color:${color(sensex.signal)}">${sensex.signal}</span><br>
+    SL: ${sensex.sl} | Target: ${sensex.target}`;
+
+    document.getElementById("finBox").innerHTML =
+    `FINNIFTY<br>
+    Price: ${fin.price}<br>
+    <span style="color:${color(fin.signal)}">${fin.signal}</span><br>
+    SL: ${fin.sl} | Target: ${fin.target}`;
+
+    document.getElementById("midBox").innerHTML =
+    `MIDCAP<br>
+    Price: ${mid.price}<br>
+    <span style="color:${color(mid.signal)}">${mid.signal}</span><br>
+    SL: ${mid.sl} | Target: ${mid.target}`;
+}
+
+// 🔄 Auto Refresh
+setInterval(fetchData, 5000);
+fetchData();
 </script>
 
 </body>
