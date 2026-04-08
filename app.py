@@ -1,158 +1,91 @@
 from flask import Flask, jsonify, render_template
+import pandas as pd
 import yfinance as yf
-import numpy as np
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__)
 
-# 🔥 Fetch Data
-def get_data(symbol):
+def calculate_signal(symbol):
     try:
-        data = yf.Ticker(symbol).history(period="5d", interval="5m")
-        return data
-    except:
-        return None
+        df = yf.Ticker(symbol).history(interval="5m", period="5d")
 
-# 🧠 ULTRA AI LOGIC
-def ultra_ai(data):
-    if data is None or data.empty:
-        return {"signal": "WAIT", "price": 0}
+        if df.empty:
+            return "NO DATA ❌", 0, 0, 0, "NO DATA"
 
-    close = data['Close']
+        df['ema9'] = df['Close'].ewm(span=9).mean()
+        df['ema21'] = df['Close'].ewm(span=21).mean()
 
-    price = float(close.iloc[-1])
+        delta = df['Close'].diff()
+        gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+        rs = gain / loss
+        df['rsi'] = 100 - (100 / (1 + rs))
 
-    sma20 = close.rolling(20).mean().iloc[-1]
-    sma50 = close.rolling(50).mean().iloc[-1]
+        last = df.iloc[-1]
+        entry = round(last['Close'], 2)
 
-    momentum = price - close.iloc[-5]
-    volatility = np.std(close[-20:])
+        # 🔥 STRONG SIGNAL
+        if last['rsi'] < 30 and last['ema9'] > last['ema21']:
+            signal = "STRONG BUY CALL 🚀"
+        elif last['rsi'] > 70 and last['ema9'] < last['ema21']:
+            signal = "STRONG BUY PUT 🔻"
+        else:
+            signal = "HOLD ⏳"
 
-    # 🔥 Market Strength
-    if price > sma20 > sma50:
-        trend = "BULLISH"
-    elif price < sma20 < sma50:
-        trend = "BEARISH"
-    else:
-        trend = "SIDEWAYS"
+        # 🔥 SL & TARGET
+        if "CALL" in signal:
+            sl = entry - 50
+            target = entry + 100
+        elif "PUT" in signal:
+            sl = entry + 50
+            target = entry - 100
+        else:
+            sl = 0
+            target = 0
 
-    # 🔥 Signal Logic
-    if trend == "BULLISH" and momentum > 0:
-        signal = "STRONG BUY"
-        confidence = 90
-    elif trend == "BEARISH" and momentum < 0:
-        signal = "STRONG SELL"
-        confidence = 90
-    elif trend == "BULLISH":
-        signal = "BUY"
-        confidence = 70
-    elif trend == "BEARISH":
-        signal = "SELL"
-        confidence = 70
-    else:
-        signal = "HOLD"
-        confidence = 50
+        # 🤖 AI PREDICTION
+        if last['ema9'] > last['ema21'] and last['rsi'] > 50:
+            prediction = "📈 UP TREND"
+        elif last['ema9'] < last['ema21'] and last['rsi'] < 50:
+            prediction = "📉 DOWN TREND"
+        else:
+            prediction = "➡️ SIDEWAYS"
 
-    # 🔥 Smart Levels
-    support = round(price - volatility, 2)
-    resistance = round(price + volatility, 2)
+        return signal, entry, sl, target, prediction
 
-    target = round(price + (volatility * 1.5), 2)
-    sl = round(price - (volatility * 1.2), 2)
+    except Exception as e:
+        print("Error:", e)
+        return "ERROR ❌", 0, 0, 0, "ERROR"
 
-    # 🔥 Risk Level
-    risk = "LOW" if volatility < 50 else "HIGH"
 
-    return {
-        "price": round(price,2),
-        "signal": signal,
-        "confidence": confidence,
-        "trend": trend,
-        "risk": risk,
-        "support": support,
-        "resistance": resistance,
-        "target": target,
-        "sl": sl
-    }
-
-# 🏠 UI
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# 📊 APIs
+
 @app.route("/nifty")
 def nifty():
-    return jsonify(ultra_ai(get_data("^NSEI")))
+    s, entry, sl, target, pred = calculate_signal("^NSEI")
+    return jsonify({
+        "signal": s,
+        "entry": entry,
+        "sl": sl,
+        "target": target,
+        "prediction": pred
+    })
+
 
 @app.route("/banknifty")
 def banknifty():
-    return jsonify(ultra_ai(get_data("^NSEBANK")))
-
-@app.route("/sensex")
-def sensex():
-    return jsonify(ultra_ai(get_data("^BSESN")))
-
-@app.route("/finnifty")
-def finnifty():
-    return jsonify(ultra_ai(get_data("^CNXFIN")))
-
-@app.route("/midcap")
-def midcap():
-    return jsonify(ultra_ai(get_data("^NSEMDCP50")))
-@app.route("/pro")
-def pro():
-    import yfinance as yf
-
-    data = yf.Ticker("^NSEI").history(period="5d", interval="5m")
-
-    if data.empty:
-        return jsonify({"error": "No Data"})
-
-    close = data['Close']
-    price = float(close.iloc[-1])
-
-    sma20 = close.rolling(20).mean().iloc[-1]
-    sma50 = close.rolling(50).mean().iloc[-1]
-
-    # Simple PRO logic
-    if price > sma20 > sma50:
-        signal = "PRO BUY"
-    elif price < sma20 < sma50:
-        signal = "PRO SELL"
-    else:
-        signal = "WAIT"
-
+    s, entry, sl, target, pred = calculate_signal("^NSEBANK")
     return jsonify({
-        "price": round(price,2),
-        "signal": signal
+        "signal": s,
+        "entry": entry,
+        "sl": sl,
+        "target": target,
+        "prediction": pred
     })
-@app.route("/option")
-def option_data():
-    import yfinance as yf
 
-    data = yf.Ticker("^NSEI").history(period="1d", interval="5m")
 
-    if data.empty:
-        return jsonify({"error": "No Data"})
-
-    close = data['Close']
-    price = float(close.iloc[-1])
-
-    # 🔥 Fake but smart logic (safe)
-    ce_strength = round(price % 100)
-    pe_strength = round(100 - ce_strength)
-
-    if ce_strength > pe_strength:
-        direction = "CALL SIDE STRONG 📈"
-        entry = "BUY CE"
-    else:
-        direction = "PUT SIDE STRONG 📉"
-        entry = "BUY PE"
-
-    return jsonify({
-        "price": round(price,2),
-        "ce": ce_strength,
-        "pe": pe_strength,
-        "direction": direction,
-        "entry": entry
-    })
+if __name__ == "__main__":
+    print("Starting Flask Server...")
+    app.run(host="127.0.0.1", port=5000, debug=True)
