@@ -1,7 +1,6 @@
 from flask import Flask, jsonify, render_template
 from SmartApi import SmartConnect
 import pyotp
-import yfinance as yf
 
 app = Flask(__name__)
 
