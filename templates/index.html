@@ -34,6 +34,10 @@ body {
     border-radius:8px;
     cursor:pointer;
 }
+
+.btn:hover {
+    background:#009624;
+}
 </style>
 </head>
 
@@ -50,26 +54,50 @@ body {
     <div id="sensexBox" class="box">Loading...</div>
     <div id="finBox" class="box">Loading...</div>
     <div id="midBox" class="box">Loading...</div>
-    <div id="optionBox" class="box">Option AI Loading...</div>
+    <div id="optionBox" class="box">Loading...</div>
+</div>
+
+<!-- BUTTONS -->
+<div>
+    <button class="btn" onclick="changeChart('NSE:BANKNIFTY')">BANKNIFTY</button>
+    <button class="btn" onclick="changeChart('NSE:NIFTY')">NIFTY</button>
+    <button class="btn" onclick="changeChart('BSE:SENSEX')">SENSEX</button>
+    <button class="btn" onclick="changeChart('NSE:FINNIFTY')">FINNIFTY</button>
+    <button class="btn" onclick="changeChart('NSE:NIFTY_MIDCAP_50')">MIDCAP</button>
+</div>
+
+<!-- ✅ FIXED CHART -->
+<div style="margin-top:20px;">
+<iframe id="chartFrame"
+src="https://s.tradingview.com/widgetembed/?symbol=NSE:NIFTY&interval=5&theme=dark"
+style="width:100%; height:500px; border:none;">
+</iframe>
 </div>
 
 <script>
 
+function changeChart(symbol){
+    document.getElementById("chartFrame").src =
+    `https://s.tradingview.com/widgetembed/?symbol=${symbol}&interval=5&theme=dark`;
+}
+
+// 🎨 color
 function color(signal){
-    if(signal?.includes("BUY")) return "lime";
-    if(signal?.includes("SELL")) return "red";
-    return "yellow";
+    if(signal.includes("BUY")) return "lime";
+    if(signal.includes("SELL")) return "red";
+    if(signal.includes("HOLD")) return "yellow";
+    return "white";
 }
 
-// 🔊 sound
-function playSound(){
-    let audio = new Audio("https://www.soundjay.com/buttons/sounds/beep-01a.mp3");
-    audio.play();
+// 🔊 ALERT
+function alertSignal(signal){
+    if(signal.includes("STRONG BUY")){
+        console.log("🔥 Strong Buy Alert");
+    }
 }
 
-let lastSignal = "";
-
-async function fetchData() {
+// 📊 Fetch
+async function fetchData(){
 
     let nifty = await fetch('/nifty').then(r=>r.json());
     let bank = await fetch('/banknifty').then(r=>r.json());
@@ -79,63 +107,55 @@ async function fetchData() {
     let option = await fetch('/option').then(r=>r.json());
 
     // 🔥 Market Status
-    if(nifty.signal?.includes("STRONG BUY")){
-        marketStatus.innerHTML = "Market: STRONG BULLISH 🚀";
-    }
-    else if(nifty.signal?.includes("BUY")){
-        marketStatus.innerHTML = "Market: BULLISH 📈";
-    }
-    else if(nifty.signal?.includes("SELL")){
-        marketStatus.innerHTML = "Market: BEARISH 📉";
-    }
-    else{
-        marketStatus.innerHTML = "Market: SIDEWAYS ⚖️";
+    let market = "SIDEWAYS";
+    if(nifty.trend == "BULLISH") market = "BULLISH 📈";
+    if(nifty.trend == "BEARISH") market = "BEARISH 📉";
+
+    document.getElementById("marketStatus").innerHTML = "Market: " + market;
+
+    // BOXES
+    function setBox(id, data, name){
+        document.getElementById(id).innerHTML =
+        `${name}<br>
+        Price: ${data.price}<br>
+        <span style="color:${color(data.signal)}">${data.signal}</span><br>
+        Trend: ${data.trend}<br>
+        Risk: ${data.risk}<br>
+        Confidence: ${data.confidence}%<br>
+        SL: ${data.sl} | Target: ${data.target}`;
     }
 
-    // 🔔 Alert
-    if(nifty.signal?.includes("STRONG") && lastSignal !== nifty.signal){
-        alert("🔥 STRONG SIGNAL: " + nifty.signal);
-        playSound();
-        lastSignal = nifty.signal;
-    }
-
-    // 📊 BOXES (FULL DATA)
-    function render(name,data){
-        return `${name}<br>
-        Price: ${data.price || "-"}<br>
-        <span style="color:${color(data.signal)}">${data.signal || "-"}</span><br>
-        Trend: ${data.trend || "-"}<br>
-        Risk: ${data.risk || "-"}<br>
-        Confidence: ${data.confidence || "-"}%<br>
-        SL: ${data.sl || "-"} | Target: ${data.target || "-"}`;
-    }
-
-    niftyBox.innerHTML = render("NIFTY",nifty);
-    bankBox.innerHTML = render("BANKNIFTY",bank);
-    sensexBox.innerHTML = render("SENSEX",sensex);
-    finBox.innerHTML = render("FINNIFTY",fin);
-    midBox.innerHTML = render("MIDCAP",mid);
+    setBox("niftyBox", nifty, "NIFTY");
+    setBox("bankBox", bank, "BANKNIFTY");
+    setBox("sensexBox", sensex, "SENSEX");
+    setBox("finBox", fin, "FINNIFTY");
+    setBox("midBox", mid, "MIDCAP");
 
     // 🔥 OPTION AI
-    optionBox.innerHTML = `OPTION AI<br>
+    document.getElementById("optionBox").innerHTML =
+    `OPTION AI<br>
     Price: ${option.price}<br>
     CE: ${option.ce} | PE: ${option.pe}<br>
     ${option.direction}<br>
-    <span style="color:${option.entry?.includes("CE")?"lime":"red"}">
-    Entry: ${option.entry}
-    </span>`;
+    Entry: ${option.entry}`;
+
+    alertSignal(nifty.signal);
 }
 
-// ⏱ Timer Fix
+// ⏱ TIMER
 let seconds = 5;
+
 setInterval(()=>{
-    document.getElementById("timer").innerHTML = "Refresh in: " + seconds + " sec";
     seconds--;
-    if(seconds < 0) seconds = 5;
+    document.getElementById("timer").innerHTML = "Refresh in: " + seconds + " sec";
+
+    if(seconds === 0){
+        fetchData();
+        seconds = 5;
+    }
 },1000);
 
-// 🔄 Auto Refresh
-setInterval(fetchData, 5000);
+// INIT
 fetchData();
 
 </script>
