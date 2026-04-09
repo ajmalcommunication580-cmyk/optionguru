@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, render_template
 from SmartApi import SmartConnect
 import pyotp
+import yfinance as yf   # ✅ FIXED
 
 app = Flask(__name__)
 
@@ -25,14 +26,14 @@ def login():
         print("Login Error:", e)
         return None
 
-# 📊 SmartAPI price
-def get_price_smartapi(token):
+# 📊 SmartAPI price (FIXED)
+def get_price_smartapi(token, symbol):
     try:
         obj = login()
-        if obj is None:
+        if obj is None or token is None:
             return None
 
-        data = obj.ltpData("NSE", token, "")
+        data = obj.ltpData("NSE", symbol, token)
         print("SMARTAPI:", data)
 
         if data and 'data' in data:
@@ -57,9 +58,9 @@ def get_price_backup(symbol):
         print("Backup Error:", e)
         return None
 
-# 🧠 Final price fetch (AUTO SWITCH)
-def get_price(token, backup_symbol):
-    price = get_price_smartapi(token)
+# 🧠 Final price fetch
+def get_price(token, symbol, backup_symbol):
+    price = get_price_smartapi(token, symbol)
 
     if price is None:
         print("⚠️ Using BACKUP DATA")
@@ -72,7 +73,7 @@ def get_price(token, backup_symbol):
 def home():
     return render_template("index.html")
 
-# 📈 Signal Logic (Advanced)
+# 📈 Signal Logic (UPGRADED)
 def generate_signal(price):
     if price is None:
         return {
@@ -82,7 +83,9 @@ def generate_signal(price):
             "sl": 0,
             "target": 0,
             "support": 0,
-            "resistance": 0
+            "resistance": 0,
+            "confidence": 0,
+            "risk": "HIGH"
         }
 
     support = round(price - 100, 2)
@@ -90,44 +93,49 @@ def generate_signal(price):
 
     signal = "BUY" if price > support else "SELL"
 
+    confidence = 70 if signal == "BUY" else 60
+    risk = "LOW" if confidence > 65 else "HIGH"
+
     return {
         "signal": signal,
         "prediction": "LIVE",
-        "entry": price,
+        "entry": round(price,2),
         "sl": support,
         "target": resistance,
         "support": support,
-        "resistance": resistance
+        "resistance": resistance,
+        "confidence": confidence,
+        "risk": risk
     }
 
 # 🚀 NIFTY
 @app.route("/nifty")
 def nifty():
-    price = get_price("99926000", "^NSEI")
+    price = get_price("99926000", "NIFTY", "^NSEI")
     return jsonify(generate_signal(price))
 
 # 🚀 BANKNIFTY
 @app.route("/banknifty")
 def banknifty():
-    price = get_price("99926009", "^NSEBANK")
+    price = get_price("99926009", "BANKNIFTY", "^NSEBANK")
     return jsonify(generate_signal(price))
 
-# 🚀 SENSEX
+# 🚀 SENSEX (backup only)
 @app.route("/sensex")
 def sensex():
-    price = get_price(None, "^BSESN")
+    price = get_price(None, None, "^BSESN")
     return jsonify(generate_signal(price))
 
 # 🚀 FINNIFTY
 @app.route("/finnifty")
 def finnifty():
-    price = get_price(None, "^CNXFIN")   # ✅ FIXED SYMBOL
+    price = get_price(None, None, "^NSEFIN")
     return jsonify(generate_signal(price))
 
 # 🚀 MIDCAP
 @app.route("/midcap")
 def midcap():
-    price = get_price(None, "^NSEMDCP50")
+    price = get_price(None, None, "^NSEMDCP50")
     return jsonify(generate_signal(price))
 
 if __name__ == "__main__":
