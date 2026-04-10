@@ -115,15 +115,16 @@ async function fetchData(){
 
     // BOXES
     function setBox(id, data, name){
-        document.getElementById(id).innerHTML =
-        `${name}<br>
-        Price: ${data.price}<br>
-        <span style="color:${color(data.signal)}">${data.signal}</span><br>
-        Trend: ${data.trend}<br>
-        Risk: ${data.risk}<br>
-        Confidence: ${data.confidence}%<br>
-        SL: ${data.sl} | Target: ${data.target}`;
-    }
+    document.getElementById(id).innerHTML =
+    `${name}<br>
+    Price: ${data.price}<br>
+    <span style="color:${color(data.signal)}">${data.signal}</span><br>
+    Trend: ${data.trend}<br>
+    Risk: ${data.risk}<br>
+    Confidence: ${data.confidence}%<br>
+    Entry: ${data.entry}<br>
+    SL: ${data.sl} | Target: ${data.target}`;
+}
 
     setBox("niftyBox", nifty, "NIFTY");
     setBox("bankBox", bank, "BANKNIFTY");
