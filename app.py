@@ -52,7 +52,6 @@ def get_price_backup(symbol):
         if not data.empty:
             return float(data['Close'].iloc[-1])
         return None
-
     except Exception as e:
         print("Backup Error:", e)
         return None
@@ -71,13 +70,14 @@ def get_price(token, symbol, backup_symbol):
 def home():
     return render_template("index.html")
 
-# 📈 Signal Logic
+# 🔥 ULTRA SIGNAL LOGIC
 def generate_signal(price):
     if price is None:
         return {
             "price": 0,
             "signal": "WAIT",
             "trend": "NO DATA",
+            "entry": "NO TRADE",
             "confidence": 0,
             "risk": "HIGH",
             "sl": 0,
@@ -87,22 +87,46 @@ def generate_signal(price):
     support = round(price - 100, 2)
     resistance = round(price + 100, 2)
 
-    signal = "BUY" if price > support else "SELL"
-    trend = "BULLISH" if signal == "BUY" else "BEARISH"
-    confidence = 70 if signal == "BUY" else 60
-    risk = "LOW" if confidence > 65 else "HIGH"
+    # 🔥 Logic Upgrade
+    if price > resistance - 20:
+        signal = "STRONG BUY 🔥"
+        trend = "BULLISH 📈"
+        entry = "ENTER NOW 🟢"
+        confidence = 85
+
+    elif price > support:
+        signal = "BUY"
+        trend = "BULLISH"
+        entry = "WAIT FOR BREAKOUT ⏳"
+        confidence = 70
+
+    elif price < support + 20:
+        signal = "STRONG SELL 🔻"
+        trend = "BEARISH 📉"
+        entry = "ENTER NOW 🔴"
+        confidence = 85
+
+    else:
+        signal = "SELL"
+        trend = "BEARISH"
+        entry = "WAIT ⏳"
+        confidence = 65
+
+    risk = "LOW" if confidence >= 80 else "MEDIUM" if confidence >= 70 else "HIGH"
 
     return {
         "price": round(price,2),
         "signal": signal,
         "trend": trend,
+        "entry": entry,
         "confidence": confidence,
         "risk": risk,
         "sl": support,
         "target": resistance
     }
 
-# 🚀 APIs
+# 🚀 APIs (SmartAPI FIXED TOKENS)
+
 @app.route("/nifty")
 def nifty():
     return jsonify(generate_signal(get_price("99926000","NIFTY","^NSEI")))
@@ -111,19 +135,22 @@ def nifty():
 def banknifty():
     return jsonify(generate_signal(get_price("99926009","BANKNIFTY","^NSEBANK")))
 
+# 🔥 FIXED SENSEX
 @app.route("/sensex")
 def sensex():
-    return jsonify(generate_signal(get_price(None,None,"^BSESN")))
+    return jsonify(generate_signal(get_price("99919000","SENSEX","^BSESN")))
 
+# 🔥 FIXED FINNIFTY
 @app.route("/finnifty")
 def finnifty():
-    return jsonify(generate_signal(get_price(None,None,"^NSEFIN")))
+    return jsonify(generate_signal(get_price("99926037","FINNIFTY","^NSEFIN")))
 
+# 🔥 FIXED MIDCAP
 @app.route("/midcap")
 def midcap():
-    return jsonify(generate_signal(get_price(None,None,"^NSEMDCP50")))
+    return jsonify(generate_signal(get_price("99926012","MIDCPNIFTY","^NSEMDCP50")))
 
-# 🔥 NEW: OPTION AI (FIX)
+# 🔥 OPTION AI UPGRADE
 @app.route("/option")
 def option_ai():
     price = get_price("99926000","NIFTY","^NSEI")
@@ -134,20 +161,25 @@ def option_ai():
             "ce": "N/A",
             "pe": "N/A",
             "direction": "NO DATA",
-            "entry": 0
+            "entry": "WAIT"
         })
 
-    ce = round(price * 0.98,2)
-    pe = round(price * 1.02,2)
+    ce_strength = int(price % 100)
+    pe_strength = 100 - ce_strength
 
-    direction = "BUY CE 🟢" if price % 2 == 0 else "BUY PE 🔴"
+    if ce_strength > pe_strength:
+        direction = "CALL SIDE STRONG 📈"
+        entry = "BUY CE 🟢"
+    else:
+        direction = "PUT SIDE STRONG 📉"
+        entry = "BUY PE 🔴"
 
     return jsonify({
         "price": round(price,2),
-        "ce": ce,
-        "pe": pe,
+        "ce": ce_strength,
+        "pe": pe_strength,
         "direction": direction,
-        "entry": round(price,2)
+        "entry": entry
     })
 
 if __name__ == "__main__":
