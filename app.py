@@ -84,8 +84,8 @@ def generate_signal(price):
             "target": 0
         }
 
-    support = round(price - 100, 2)
-    resistance = round(price + 100, 2)
+    support = round(price - 80, 2)
+    resistance = round(price + 80, 2)
 
     # 🔥 Logic Upgrade
     if price > resistance - 20:
@@ -98,7 +98,7 @@ def generate_signal(price):
         signal = "BUY"
         trend = "BULLISH"
         entry = "WAIT FOR BREAKOUT ⏳"
-        confidence = 70
+        confidence = 85
 
     elif price < support + 20:
         signal = "STRONG SELL 🔻"
