@@ -1,165 +1,58 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>OptionGuru PRO</title>
+def generate_signal(price):
+    if price is None:
+        return {
+            "price": 0,
+            "signal": "WAIT",
+            "trend": "NO DATA",
+            "entry": "NO TRADE",
+            "confidence": 0,
+            "risk": "HIGH",
+            "sl": 0,
+            "target": 0
+        }
 
-<style>
-body {
-    background:#0b0f19;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-}
+    support = round(price - 80, 2)
+    resistance = round(price + 80, 2)
 
-.container {
-    display:flex;
-    justify-content:center;
-    flex-wrap:wrap;
-}
+    zone = (resistance - support) * 0.2   # 🔥 breakout zone
 
-.box {
-    background:#111827;
-    margin:10px;
-    padding:15px;
-    border-radius:10px;
-    width:200px;
-}
+    # 🔥 STRONG BUY (REAL BREAKOUT)
+    if price > resistance - zone:
+        signal = "STRONG BUY 🔥"
+        trend = "BULLISH 📈"
+        entry = "ENTER NOW 🟢"
+        confidence = 90
 
-.btn {
-    padding:10px 15px;
-    margin:5px;
-    background:#00c853;
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-}
+    # 🔥 STRONG SELL (REAL BREAKDOWN)
+    elif price < support + zone:
+        signal = "STRONG SELL 🔻"
+        trend = "BEARISH 📉"
+        entry = "ENTER NOW 🔴"
+        confidence = 90
 
-.btn:hover {
-    background:#009624;
-}
-</style>
-</head>
+    # ⚖️ SIDEWAYS ZONE
+    elif support + zone < price < resistance - zone:
+        signal = "HOLD ⚠️"
+        trend = "SIDEWAYS"
+        entry = "NO TRADE ❌"
+        confidence = 50
 
-<body>
+    # fallback
+    else:
+        signal = "WAIT"
+        trend = "NEUTRAL"
+        entry = "WAIT ⏳"
+        confidence = 60
 
-<h1>🚀 OptionGuru PRO (ULTRA AI)</h1>
+    risk = "LOW" if confidence >= 85 else "MEDIUM" if confidence >= 70 else "HIGH"
 
-<h3 id="marketStatus" style="color:yellow;"></h3>
-<h4 id="timer" style="color:cyan;"></h4>
-
-<div class="container">
-    <div id="niftyBox" class="box">Loading...</div>
-    <div id="bankBox" class="box">Loading...</div>
-    <div id="sensexBox" class="box">Loading...</div>
-    <div id="finBox" class="box">Loading...</div>
-    <div id="midBox" class="box">Loading...</div>
-    <div id="optionBox" class="box">Loading...</div>
-</div>
-
-<!-- BUTTONS -->
-<div>
-    <button class="btn" onclick="changeChart('NSE:BANKNIFTY')">BANKNIFTY</button>
-    <button class="btn" onclick="changeChart('NSE:NIFTY')">NIFTY</button>
-    <button class="btn" onclick="changeChart('BSE:SENSEX')">SENSEX</button>
-    <button class="btn" onclick="changeChart('NSE:FINNIFTY')">FINNIFTY</button>
-    <button class="btn" onclick="changeChart('NSE:NIFTY_MIDCAP_50')">MIDCAP</button>
-</div>
-
-<!-- ✅ FIXED CHART -->
-<div style="margin-top:20px;">
-<iframe id="chartFrame"
-src="https://s.tradingview.com/widgetembed/?symbol=NSE:NIFTY&interval=5&theme=dark"
-style="width:100%; height:500px; border:none;">
-</iframe>
-</div>
-
-<script>
-
-function changeChart(symbol){
-    document.getElementById("chartFrame").src =
-    `https://s.tradingview.com/widgetembed/?symbol=${symbol}&interval=5&theme=dark`;
-}
-
-// 🎨 color
-function color(signal){
-    if(signal.includes("BUY")) return "lime";
-    if(signal.includes("SELL")) return "red";
-    if(signal.includes("HOLD")) return "yellow";
-    return "white";
-}
-
-// 🔊 ALERT
-function alertSignal(signal){
-    if(signal.includes("STRONG BUY")){
-        console.log("🔥 Strong Buy Alert");
+    return {
+        "price": round(price,2),
+        "signal": signal,
+        "trend": trend,
+        "entry": entry,
+        "confidence": confidence,
+        "risk": risk,
+        "sl": support,
+        "target": resistance
     }
-}
-
-// 📊 Fetch
-async function fetchData(){
-
-    let nifty = await fetch('/nifty').then(r=>r.json());
-    let bank = await fetch('/banknifty').then(r=>r.json());
-    let sensex = await fetch('/sensex').then(r=>r.json());
-    let fin = await fetch('/finnifty').then(r=>r.json());
-    let mid = await fetch('/midcap').then(r=>r.json());
-    let option = await fetch('/option').then(r=>r.json());
-
-    // 🔥 Market Status
-    let market = "SIDEWAYS";
-    if(nifty.trend == "BULLISH") market = "BULLISH 📈";
-    if(nifty.trend == "BEARISH") market = "BEARISH 📉";
-
-    document.getElementById("marketStatus").innerHTML = "Market: " + market;
-
-    // BOXES
-    function setBox(id, data, name){
-    document.getElementById(id).innerHTML =
-    `${name}<br>
-    Price: ${data.price}<br>
-    <span style="color:${color(data.signal)}">${data.signal}</span><br>
-    Trend: ${data.trend}<br>
-    Risk: ${data.risk}<br>
-    Confidence: ${data.confidence}%<br>
-    Entry: ${data.entry}<br>
-    SL: ${data.sl} | Target: ${data.target}`;
-}
-
-    setBox("niftyBox", nifty, "NIFTY");
-    setBox("bankBox", bank, "BANKNIFTY");
-    setBox("sensexBox", sensex, "SENSEX");
-    setBox("finBox", fin, "FINNIFTY");
-    setBox("midBox", mid, "MIDCAP");
-
-    // 🔥 OPTION AI
-    document.getElementById("optionBox").innerHTML =
-    `OPTION AI<br>
-    Price: ${option.price}<br>
-    CE: ${option.ce} | PE: ${option.pe}<br>
-    ${option.direction}<br>
-    Entry: ${option.entry}`;
-
-    alertSignal(nifty.signal);
-}
-
-// ⏱ TIMER
-let seconds = 5;
-
-setInterval(()=>{
-    seconds--;
-    document.getElementById("timer").innerHTML = "Refresh in: " + seconds + " sec";
-
-    if(seconds === 0){
-        fetchData();
-        seconds = 5;
-    }
-},1000);
-
-// INIT
-fetchData();
-
-</script>
-
-</body>
-</html>
