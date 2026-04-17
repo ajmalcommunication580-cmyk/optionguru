@@ -27,15 +27,14 @@ def login():
         print("Login Error:", e)
         return None
 
-# 📊 SmartAPI price
+# 📊 SmartAPI price (LIVE)
 def get_price_smartapi(token, symbol):
     try:
         obj = login()
-        if obj is None or token is None:
+        if obj is None:
             return None
 
         data = obj.ltpData("NSE", symbol, token)
-
         if data and 'data' in data:
             return float(data['data']['ltp'])
         return None
@@ -44,21 +43,21 @@ def get_price_smartapi(token, symbol):
         print("SmartAPI Error:", e)
         return None
 
-# 📊 Yahoo with history
+# 📊 Yahoo history
 def get_price_with_history(symbol):
     try:
         ticker = yf.Ticker(symbol)
         data = ticker.history(period="1d", interval="5m")
 
         if not data.empty:
-            closes = list(data['Close'].tail(15))
-            return closes[-1], closes
+            closes = list(data['Close'].tail(20))
+            return closes
 
-        return None, []
+        return []
 
     except Exception as e:
-        print("Backup Error:", e)
-        return None, []
+        print("Yahoo Error:", e)
+        return []
 
 # 🧠 RSI
 def calculate_rsi(prices, period=14):
@@ -68,15 +67,22 @@ def calculate_rsi(prices, period=14):
     series = pd.Series(prices)
     delta = series.diff()
 
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    gain = (delta.where(delta > 0, 0)).rolling(period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(period).mean()
 
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
 
     return round(rsi.iloc[-1], 2)
 
-# 🔥 PRO SIGNAL
+# 🔥 HYBRID PRICE (LIVE + HISTORY)
+def get_price_full(token, symbol, yahoo_symbol):
+    price = get_price_smartapi(token, symbol)
+    history = get_price_with_history(yahoo_symbol)
+
+    return price, history
+
+# 🔥 PRO AI SIGNAL
 def generate_signal(price, history):
 
     if price is None or len(history) < 10:
@@ -92,58 +98,62 @@ def generate_signal(price, history):
         }
 
     rsi = calculate_rsi(history)
-    avg = sum(history)/len(history)
-    momentum = price - avg
 
-    support = round(min(history), 2)
-    resistance = round(max(history), 2)
+    high = max(history)
+    low = min(history)
+    range_val = high - low
+
+    support = round(low, 2)
+    resistance = round(high, 2)
+
+    zone = range_val * 0.15
 
     # 🚀 BREAKOUT
-    if price > resistance:
-        signal = "BREAKOUT BUY 🚀"
+    if price > resistance + zone:
+        signal = "STRONG BREAKOUT BUY 🚀"
         trend = "STRONG BULLISH"
-        entry = "ENTER NOW"
+        entry = "ENTER NOW 🟢"
         confidence = 90
 
-    elif price < support:
-        signal = "BREAKDOWN SELL 🔻"
+    elif price < support - zone:
+        signal = "STRONG BREAKDOWN SELL 🔻"
         trend = "STRONG BEARISH"
-        entry = "ENTER NOW"
+        entry = "ENTER NOW 🔴"
         confidence = 90
 
-    # 🔥 RSI
+    # 🔄 REVERSAL
     elif rsi < 30:
         signal = "BUY (OVERSOLD)"
         trend = "REVERSAL UP"
-        entry = "SAFE ENTRY"
+        entry = "BUY ON DIP 🟢"
         confidence = 80
 
     elif rsi > 70:
         signal = "SELL (OVERBOUGHT)"
         trend = "REVERSAL DOWN"
-        entry = "SAFE ENTRY"
+        entry = "SELL ON RISE 🔴"
         confidence = 80
 
-    # 📊 MOMENTUM
-    elif momentum > 20:
-        signal = "BUY"
-        trend = "BULLISH"
-        entry = "WAIT FOR DIP"
-        confidence = 70
-
-    elif momentum < -20:
-        signal = "SELL"
-        trend = "BEARISH"
-        entry = "WAIT FOR RISE"
-        confidence = 70
-
-    else:
+    # 📊 SIDEWAYS
+    elif support + zone < price < resistance - zone:
         signal = "NO TRADE"
         trend = "SIDEWAYS"
         entry = "AVOID ⚠️"
         confidence = 60
 
-    risk = "LOW" if confidence >= 80 else "MEDIUM"
+    else:
+        signal = "WAIT"
+        trend = "NEUTRAL"
+        entry = "WAIT"
+        confidence = 65
+
+    # 🎯 Risk
+    if confidence >= 85:
+        risk = "LOW"
+    elif confidence >= 70:
+        risk = "MEDIUM"
+    else:
+        risk = "HIGH"
 
     return {
         "price": round(price,2),
@@ -162,39 +172,39 @@ def generate_signal(price, history):
 def home():
     return render_template("index.html")
 
-# 🚀 APIs (अब history use होगी)
+# 🚀 APIs
 
 @app.route("/nifty")
 def nifty():
-    price, history = get_price_with_history("^NSEI")
+    price, history = get_price_full("99926000","NIFTY","^NSEI")
     return jsonify(generate_signal(price, history))
 
 @app.route("/banknifty")
 def banknifty():
-    price, history = get_price_with_history("^NSEBANK")
+    price, history = get_price_full("99926009","BANKNIFTY","^NSEBANK")
     return jsonify(generate_signal(price, history))
 
 @app.route("/sensex")
 def sensex():
-    price, history = get_price_with_history("^BSESN")
+    price, history = get_price_full("99919000","SENSEX","^BSESN")
     return jsonify(generate_signal(price, history))
 
 @app.route("/finnifty")
 def finnifty():
-    price, history = get_price_with_history("^CNXFIN")  # ✅ FIX
+    price, history = get_price_full("99926037","FINNIFTY","^NSEFIN")
     return jsonify(generate_signal(price, history))
 
 @app.route("/midcap")
 def midcap():
-    price, history = get_price_with_history("^NSEMDCP50")
+    price, history = get_price_full("99926012","MIDCPNIFTY","^NSEMDCP50")
     return jsonify(generate_signal(price, history))
 
 # 🔥 OPTION AI
 @app.route("/option")
 def option_ai():
-    price, history = get_price_with_history("^NSEI")
+    price, history = get_price_full("99926000","NIFTY","^NSEI")
 
-    if price is None:
+    if price is None or len(history) < 10:
         return jsonify({
             "price": 0,
             "ce": "N/A",
@@ -204,20 +214,21 @@ def option_ai():
         })
 
     rsi = calculate_rsi(history)
+    avg = sum(history)/len(history)
 
     ce = round(price * 0.99, 2)
     pe = round(price * 1.01, 2)
 
-    if rsi < 35:
+    if rsi < 30 and price < avg:
         direction = "BUY CE 🟢 (REVERSAL)"
         entry = "ENTER NOW"
 
-    elif rsi > 65:
+    elif rsi > 70 and price > avg:
         direction = "BUY PE 🔴 (REVERSAL)"
         entry = "ENTER NOW"
 
     else:
-        direction = "SIDEWAYS ⚠️"
+        direction = "NO CLEAR SIGNAL ⚠️"
         entry = "WAIT"
 
     return jsonify({
